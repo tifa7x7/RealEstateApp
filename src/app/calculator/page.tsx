@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
+import { CalcExperience } from '@/components/calculator/CalcExperience';
 import { CalcUrlBootstrap } from '@/components/calculator/CalcUrlBootstrap';
-import { CalcWizard } from '@/components/calculator/CalcWizard';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
@@ -17,7 +17,7 @@ export default function CalculatorPage() {
         <CalcUrlBootstrap />
       </Suspense>
       <Suspense fallback={null}>
-        <CalcWizard />
+        <CalcExperience />
       </Suspense>
     </div>
   );

@@ -10,7 +10,9 @@ export type ProFeature =
   | 'forecast'
   | 'portfolio'
   | 'unlimited-favorites'
-  | 'exports';
+  | 'exports'
+  | 'compare-multi'
+  | 'realtime-alerts';
 
 const PRO_FEATURES: ReadonlySet<string> = new Set<ProFeature>([
   'multi-object',
@@ -20,7 +22,24 @@ const PRO_FEATURES: ReadonlySet<string> = new Set<ProFeature>([
   'portfolio',
   'unlimited-favorites',
   'exports',
+  'compare-multi',
+  'realtime-alerts',
 ]);
+
+/** Soft caps surfaced by `useCompare`. Free tier sees the 'compare-multi' Pro feature when trying to exceed. */
+export const COMPARE_LIMIT_FREE = 2;
+export const COMPARE_LIMIT_PRO = 5;
+
+/** Free-tier cap on favorites (project-level). Pro is unlimited. Per CLAUDE.md. */
+export const FAVORITES_LIMIT_FREE = 25;
+
+/**
+ * Free-tier cap on price alerts. Free users see a weekly digest of any
+ * triggered alerts; Pro users get real-time emails per change with no cap.
+ * Per CLAUDE.md "Pro must include at least one non-investor benefit."
+ */
+export const ALERTS_LIMIT_FREE = 5;
+export const ALERTS_DEFAULT_THRESHOLD_PCT = 5;
 
 export interface PaywallResult {
   allowed: boolean;

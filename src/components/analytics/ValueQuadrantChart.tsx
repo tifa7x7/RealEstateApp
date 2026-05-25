@@ -13,9 +13,9 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { useChartColors } from '@/hooks/useChartColors';
 import { useProjects } from '@/hooks/useProjects';
 import { useLocale, useTranslations } from '@/hooks/useTranslations';
-import { CLASS_COLORS } from '@/lib/constants';
 import { fmt } from '@/lib/formatters';
 import type { ProjectClass } from '@/lib/types';
 
@@ -27,13 +27,11 @@ interface ScatterPoint {
   classType: ProjectClass;
 }
 
-const CHART_GRID = '#1f2937';
-const CHART_TICK = '#8893a7';
-
 export function ValueQuadrantChart() {
   const t = useTranslations();
   const { locale } = useLocale();
   const { projects } = useProjects();
+  const chart = useChartColors();
 
   const data = useMemo<ScatterPoint[]>(
     () =>
@@ -70,30 +68,30 @@ export function ValueQuadrantChart() {
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
             <XAxis
               dataKey="distSea"
               type="number"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               tickFormatter={(v: number) => fmt.dist(v, locale)}
             />
             <YAxis
               dataKey="pricePerSqm"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
               width={50}
             />
             <RTooltip content={renderTooltip} cursor={{ strokeDasharray: '3 3' }} />
             <Scatter data={data}>
               {data.map((e, i) => (
-                <Cell key={i} fill={CLASS_COLORS[e.classType]} fillOpacity={0.7} />
+                <Cell key={i} fill={chart.class[e.classType]} fillOpacity={0.7} />
               ))}
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
       </div>
       <div className="flex justify-center flex-wrap gap-4 mt-2">
-        {(Object.entries(CLASS_COLORS) as [ProjectClass, string][]).map(([cls, color]) => (
+        {(Object.entries(chart.class) as [ProjectClass, string][]).map(([cls, color]) => (
           <div key={cls} className="flex items-center gap-1.5 text-[11px] text-[var(--text-dim)]">
             <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
             {cls}

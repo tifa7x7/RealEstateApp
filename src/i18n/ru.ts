@@ -1,10 +1,19 @@
 import type { Translations } from './types';
 
 export const ru: Translations = {
-  appName: 'CrimeaDevTracker',
+  appName: 'RealEstateApp',
   appSub: 'Аналитика инвестиций в новостройки',
+  hero: {
+    headline: 'Найди квартиру в Крыму и просчитай инвестицию',
+    subhead:
+      'Цены застройщиков, ипотека, аренда и срок окупаемости — в одном калькуляторе. Без брокера, без таблиц Excel.',
+    searchPlaceholder: 'Введите ЖК, район или застройщика',
+    cityPillsLabel: 'Города',
+    marketSnapshot: 'Показатели рынка',
+    marketSnapshotHide: 'Скрыть',
+  },
   tabs: {
-    table: 'Таблица',
+    search: 'Поиск',
     analytics: 'Аналитика',
     map: 'Карта',
     calculator: 'Калькулятор',
@@ -109,6 +118,42 @@ export const ru: Translations = {
     totalPrice: 'Полная цена',
     aiDesign: 'AI дизайн интерьера (скоро)',
     description: 'Описание',
+  },
+  confidence: {
+    verifiedLabel: 'Подтверждено',
+    verifiedHint: 'Данные подтверждены застройщиком или взяты из квартиры в каталоге.',
+    estimatedLabel: 'Оценка',
+    estimatedHint: 'Расчёт на основе рыночных средних значений. Можете подкорректировать.',
+    userInputLabel: 'Ваш ввод',
+    userInputHint: 'Вы изменили значение по умолчанию. Расчёт использует именно его.',
+    unverifiedLabel: 'Не проверено',
+    unverifiedHint: 'Данные не подтверждены застройщиком. Проверяйте перед решением.',
+  },
+  wizard: {
+    intro: 'Что считаем?',
+    introBody:
+      'За 3 шага посчитаем ежемесячный платёж, доход от аренды и срок окупаемости.',
+    stepLabel: 'Шаг',
+    of: 'из',
+    next: 'Далее',
+    back: 'Назад',
+    finish: 'Показать результат',
+    skipToExpert: 'Открыть все параметры',
+    expertMode: 'Все параметры',
+    wizardMode: 'Быстрый расчёт',
+    step1Title: 'Сколько стоит квартира?',
+    step1Hint: 'Город, тип, площадь и цена — этого хватит для базового расчёта.',
+    step2Title: 'Берёте ипотеку?',
+    step2Hint:
+      'Учтём семейную ипотеку под 6% до лимита и рыночную ставку на остаток.',
+    step2YesLabel: 'Да, нужна ипотека',
+    step2NoLabel: 'Нет, покупаю за свои',
+    step3Title: 'Будете сдавать в аренду?',
+    step3Hint:
+      'Включим арендный доход и расчёт срока окупаемости, если планируете сдавать.',
+    step3YesLabel: 'Да, буду сдавать',
+    step3NoLabel: 'Нет, для жизни',
+    finishHint: 'Готово. Результат рядом — можно сразу увидеть цифры.',
   },
   calc: {
     title: 'Калькулятор инвестиций',
@@ -249,6 +294,43 @@ export const ru: Translations = {
     clear: 'Очистить',
     close: 'Закрыть',
     amenityCount: 'Кол-во удобств',
+  },
+  alerts: {
+    sectionTitle: 'Уведомления о цене',
+    sectionHint:
+      'Получайте письмо, когда цена на квартиру или ЖК из избранного меняется.',
+    addForProject: 'Уведомить об изменении цены',
+    addForUnit: 'Уведомить об изменении цены квартиры',
+    removeForProject: 'Отключить уведомление',
+    removeForUnit: 'Отключить уведомление',
+    thresholdLabel: 'Порог изменения',
+    thresholdHint:
+      'Письмо приходит, когда цена изменяется как минимум на указанный процент.',
+    proRealtime: 'Pro — мгновенно при каждом изменении',
+    freeWeeklyDigest: 'Free — еженедельная сводка',
+    nudgeTitle: 'Следить за ценами на избранное?',
+    nudgeBody:
+      'Мы пришлём письмо, если цена на одну из ваших квартир снизится. Free — раз в неделю, Pro — сразу.',
+    nudgeEnable: 'Включить уведомления',
+    nudgeDismiss: 'Не сейчас',
+    nudgeEnabled: 'Уведомления включены',
+    limitReachedFree:
+      'Лимит 5 уведомлений на Free. Pro — без ограничений и мгновенные оповещения.',
+    saveFailed: 'Не удалось сохранить. Попробуйте позже.',
+    signInRequired: 'Войдите, чтобы получать уведомления.',
+    enabled: 'Включено',
+    disabled: 'Отключено',
+    enable: 'Включить',
+    disable: 'Отключить',
+    deleteAlert: 'Удалить',
+    empty: 'Активных уведомлений пока нет.',
+    activeOn: 'Уведомлений активно',
+    wholeProject: 'весь ЖК',
+    unit: 'квартира',
+    lastNotifiedNever: 'Ещё не отправлялось',
+    lastNotified: 'Последнее письмо:',
+    upgradeForRealtime:
+      'Хотите получать оповещения мгновенно, а не раз в неделю? Pro снимает ограничение.',
   },
   common: {
     pro: 'Pro',

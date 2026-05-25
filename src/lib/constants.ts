@@ -61,22 +61,137 @@ export const REGIONS_DATA: readonly Region[] = [
   { id: 'kaliningrad', name: 'Калининградская область', nameEn: 'Kaliningrad Oblast' },
 ];
 
+/**
+ * Domain → CSS-variable maps. Components consume these via `var(--token)`,
+ * NOT raw hex. The actual hex values live in `src/styles/globals.css` and
+ * support both dark and light themes plus future re-skinning.
+ *
+ * When you need the *resolved* hex (e.g. for an SVG `fill` attribute that
+ * doesn't interpolate CSS variables), use the `useChartColors()` hook in
+ * `src/hooks/useChartColors.ts` — it reads `getComputedStyle` and is
+ * theme-aware.
+ */
 export const STATUS_COLORS: Record<ProjectStatus, string> = {
-  'Проектируется': '#3b82f6',
-  'Строится': '#f59e0b',
-  'Ввод в эксплуатацию': '#a855f7',
-  'Сдан': '#00d4aa',
+  'Проектируется': 'var(--status-projected)',
+  'Строится': 'var(--status-construction)',
+  'Ввод в эксплуатацию': 'var(--status-handover)',
+  'Сдан': 'var(--status-completed)',
 };
 
 export const CLASS_COLORS: Record<ProjectClass, string> = {
-  'Эконом': '#8893a7',
-  'Комфорт': '#3b82f6',
-  'Бизнес': '#f59e0b',
-  'Премиум': '#a855f7',
+  'Эконом': 'var(--class-economy)',
+  'Комфорт': 'var(--class-comfort)',
+  'Бизнес': 'var(--class-business)',
+  'Премиум': 'var(--class-premium)',
 };
 
 export const UNIT_STATUS_COLORS: Record<UnitStatus, string> = {
-  'в продаже': '#00d4aa',
-  'бронь': '#f59e0b',
-  'продано': '#ef4444',
+  'в продаже': 'var(--unit-available)',
+  'бронь': 'var(--unit-reserved)',
+  'продано': 'var(--unit-sold)',
 };
+
+/**
+ * CSS-variable names (without the `var(...)` wrapper) for each domain key.
+ * `useChartColors()` reads these to resolve theme-aware hex for SVG fills.
+ */
+export const STATUS_COLOR_VARS: Record<ProjectStatus, string> = {
+  'Проектируется': '--status-projected',
+  'Строится': '--status-construction',
+  'Ввод в эксплуатацию': '--status-handover',
+  'Сдан': '--status-completed',
+};
+
+export const CLASS_COLOR_VARS: Record<ProjectClass, string> = {
+  'Эконом': '--class-economy',
+  'Комфорт': '--class-comfort',
+  'Бизнес': '--class-business',
+  'Премиум': '--class-premium',
+};
+
+export const UNIT_STATUS_COLOR_VARS: Record<UnitStatus, string> = {
+  'в продаже': '--unit-available',
+  'бронь': '--unit-reserved',
+  'продано': '--unit-sold',
+};
+
+/**
+ * Finishing-grade options for the calculator's renovation field. Each grade
+ * has a typical ₽/m² range; the calculator UI uses the midpoint to pre-fill
+ * the `renovation` field as `area × pricePerSqm`. Users can still override
+ * the resulting number freely.
+ *
+ * Source: Crimean market reference data for 2026 — Simferopol avgRenovation
+ * is 15 000 ₽/m² (see MARKET_DATA.simferopol.avgRenovation); the other tiers
+ * are derived industry estimates.
+ */
+export type FinishingGradeId =
+  | 'none'
+  | 'pre-rough'
+  | 'rough'
+  | 'finished'
+  | 'white-box'
+  | 'turn-key';
+
+export interface FinishingGrade {
+  id: FinishingGradeId;
+  labelRu: string;
+  labelEn: string;
+  /** Typical ₽/m² for this finishing tier. */
+  pricePerSqm: number;
+  /** One-line explanation for the user (Russian). */
+  hintRu: string;
+  /** One-line explanation for the user (English). */
+  hintEn: string;
+}
+
+export const FINISHING_GRADES: readonly FinishingGrade[] = [
+  {
+    id: 'none',
+    labelRu: 'Без ремонта',
+    labelEn: 'None',
+    pricePerSqm: 0,
+    hintRu: 'Принимаете квартиру как есть.',
+    hintEn: 'Take the apartment as-is.',
+  },
+  {
+    id: 'pre-rough',
+    labelRu: 'Черновая',
+    labelEn: 'Pre-rough',
+    pricePerSqm: 6000,
+    hintRu: 'Стяжка, штукатурка, подведённые коммуникации.',
+    hintEn: 'Screed, plaster, utility hook-ups.',
+  },
+  {
+    id: 'rough',
+    labelRu: 'Предчистовая',
+    labelEn: 'Rough',
+    pricePerSqm: 12000,
+    hintRu: 'Готовые стены и пол под обои/ламинат.',
+    hintEn: 'Walls and floors ready for wallpaper / laminate.',
+  },
+  {
+    id: 'finished',
+    labelRu: 'Чистовая',
+    labelEn: 'Finished',
+    pricePerSqm: 22000,
+    hintRu: 'Полная отделка, мебель и техника — отдельно.',
+    hintEn: 'Full finishing; furniture and appliances separate.',
+  },
+  {
+    id: 'white-box',
+    labelRu: 'White-box',
+    labelEn: 'White-box',
+    pricePerSqm: 35000,
+    hintRu: 'Готовая отделка под собственный дизайн.',
+    hintEn: 'Finished surfaces ready for your own design.',
+  },
+  {
+    id: 'turn-key',
+    labelRu: 'Под ключ',
+    labelEn: 'Turn-key',
+    pricePerSqm: 55000,
+    hintRu: 'Полностью готовая квартира с мебелью и техникой.',
+    hintEn: 'Fully equipped — furniture and appliances included.',
+  },
+] as const;

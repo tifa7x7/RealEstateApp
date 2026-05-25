@@ -76,6 +76,67 @@ export function getFilterOptions(projects: readonly Project[]): FilterOptions {
   };
 }
 
+export interface DistrictStats {
+  /** District name as stored on `Project.district`. */
+  district: string;
+  /** City the district belongs to (taken from the first project; all projects in a district share one city in our seed). */
+  city: string;
+  count: number;
+  totalUnits: number;
+  availableUnits: number;
+  avgPricePerSqm: number;
+  minPrice: number;
+  maxPrice: number;
+  avgSeaDistance: number;
+  /** Up to N sample projects to display in a side panel, sorted by min price asc. */
+  sampleProjects: Project[];
+}
+
+/**
+ * Aggregate stats for a single district. Pure. Used by the map's
+ * DistrictPanel to show "what's it like to live / invest here" without
+ * making the user click each marker.
+ */
+export function getDistrictStats(
+  projects: readonly Project[],
+  district: string,
+  options: { sampleSize?: number } = {},
+): DistrictStats | null {
+  const matching = projects.filter((p) => p.district === district);
+  if (matching.length === 0) return null;
+
+  const sampleSize = options.sampleSize ?? 4;
+  const totalUnits = matching.reduce((s, p) => s + p.totalUnits, 0);
+  const availableUnits = matching.reduce(
+    (s, p) => s + p.units.filter((u) => u.status === 'в продаже').length,
+    0,
+  );
+  const avgPricePerSqm = Math.round(
+    matching.reduce((s, p) => s + p.pricePerSqm, 0) / matching.length,
+  );
+  const minPrice = Math.min(...matching.map((p) => p.minPrice));
+  const maxPrice = Math.max(...matching.map((p) => p.minPrice));
+  const avgSeaDistance = +(
+    matching.reduce((s, p) => s + p.distSea, 0) / matching.length
+  ).toFixed(2);
+  const sampleProjects = [...matching]
+    .sort((a, b) => a.minPrice - b.minPrice)
+    .slice(0, sampleSize);
+
+  return {
+    district,
+    city: matching[0].city,
+    count: matching.length,
+    totalUnits,
+    availableUnits,
+    avgPricePerSqm,
+    minPrice,
+    maxPrice,
+    avgSeaDistance,
+    sampleProjects,
+  };
+}
+
 export function getMarketStats(projects: readonly Project[]): MarketStats {
   if (projects.length === 0) {
     return { count: 0, totalUnits: 0, avgPrice: 0, medianPrice: 0, minPrice: 0, maxPrice: 0, avgSea: 0, nearSea: 0 };

@@ -14,6 +14,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { useChartColors } from '@/hooks/useChartColors';
 import { useProjects } from '@/hooks/useProjects';
 import { useLocale, useTranslations } from '@/hooks/useTranslations';
 import { fmt } from '@/lib/formatters';
@@ -25,16 +26,13 @@ interface Row {
   count: number;
 }
 
-const CHART_GRID = '#1f2937';
-const CHART_TICK = '#8893a7';
-const POSITIVE = '#00d4aa';
-const NEGATIVE = '#ef4444';
 const MIN_SAMPLES = 2;
 
 export function AmenityImpactChart() {
   const t = useTranslations();
   const { locale } = useLocale();
   const { projects } = useProjects();
+  const chart = useChartColors();
 
   const data = useMemo<Row[]>(() => {
     if (projects.length === 0) return [];
@@ -92,23 +90,23 @@ export function AmenityImpactChart() {
             layout="vertical"
             margin={{ top: 0, right: 20, bottom: 0, left: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
             <XAxis
               type="number"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
             />
             <YAxis
               dataKey="amenity"
               type="category"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               width={130}
             />
             <RTooltip content={renderTooltip} cursor={{ fill: 'rgba(127,127,127,0.05)' }} />
-            <ReferenceLine x={0} stroke={CHART_TICK} />
+            <ReferenceLine x={0} stroke={chart.tick} />
             <Bar dataKey="impact" radius={[0, 3, 3, 0]}>
               {data.map((e, i) => (
-                <Cell key={i} fill={e.impact >= 0 ? POSITIVE : NEGATIVE} fillOpacity={0.75} />
+                <Cell key={i} fill={e.impact >= 0 ? chart.accent : chart.danger} fillOpacity={0.75} />
               ))}
             </Bar>
           </BarChart>

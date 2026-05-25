@@ -7,6 +7,102 @@ import type {
   MortgageResult,
 } from './types';
 
+export type CalcConfidenceTier = 'verified' | 'estimated' | 'user-input';
+
+/**
+ * Classifies a calculator result section (cost / mortgage / rental / exit /
+ * metrics) by the provenance of the inputs that drive it. Pure: no React.
+ *
+ * Rules:
+ *   - `verified` — the section's primary input came from a real project
+ *     (`sourceProjectId` set on the CalcObject). Currently only `cost`
+ *     can be `verified`; mortgage/rental/exit are model outputs and remain
+ *     `estimated` even when the project is verified.
+ *   - `user-input` — the user changed at least one driving input away from
+ *     the default. Trumps `estimated`.
+ *   - `estimated` — defaults across the board.
+ */
+export function classifyCalcSection(
+  section: 'cost' | 'mortgage' | 'rental' | 'exit' | 'metrics',
+  obj: CalcObject,
+): CalcConfidenceTier {
+  const defaults = defaultCalcObject();
+
+  if (section === 'cost') {
+    if (obj.sourceProjectId !== null && obj.sourceProjectId !== undefined) {
+      return 'verified';
+    }
+    const costFields: (keyof CalcObject)[] = [
+      'price',
+      'parking',
+      'storage',
+      'renovation',
+      'realtor',
+      'otherCosts',
+    ];
+    return costFields.some((f) => obj[f] !== defaults[f])
+      ? 'user-input'
+      : 'estimated';
+  }
+
+  if (section === 'mortgage') {
+    const fields: (keyof CalcObject)[] = [
+      'downPct',
+      'term',
+      'familyRate',
+      'marketRate',
+      'subsidyLimit',
+    ];
+    return fields.some((f) => obj[f] !== defaults[f])
+      ? 'user-input'
+      : 'estimated';
+  }
+
+  if (section === 'rental') {
+    const fields: (keyof CalcObject)[] = [
+      'monthlyRent',
+      'vacancy',
+      'taxRate',
+      'rentGrowth',
+      'utilities',
+      'capRepair',
+      'propertyTax',
+    ];
+    return fields.some((f) => obj[f] !== defaults[f])
+      ? 'user-input'
+      : 'estimated';
+  }
+
+  if (section === 'exit') {
+    const fields: (keyof CalcObject)[] = [
+      'appreciation',
+      'holdingYears',
+      'sellingCosts',
+      'saleTax',
+    ];
+    return fields.some((f) => obj[f] !== defaults[f])
+      ? 'user-input'
+      : 'estimated';
+  }
+
+  // 'metrics' is a composite — inherits the highest-precedence tier among
+  // its inputs. User-input from any contributing section wins.
+  if (
+    classifyCalcSection('cost', obj) === 'user-input' ||
+    classifyCalcSection('mortgage', obj) === 'user-input' ||
+    classifyCalcSection('rental', obj) === 'user-input'
+  ) {
+    return 'user-input';
+  }
+  if (
+    obj.sourceProjectId !== null &&
+    obj.sourceProjectId !== undefined
+  ) {
+    return 'verified';
+  }
+  return 'estimated';
+}
+
 export function calcMonthlyPayment(principal: number, annualRate: number, termYears: number): number {
   if (principal <= 0 || annualRate <= 0 || termYears <= 0) return 0;
   const r = annualRate / 100 / 12;

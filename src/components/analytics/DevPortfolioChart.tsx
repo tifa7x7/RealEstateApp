@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { useChartColors } from '@/hooks/useChartColors';
 import { useProjects } from '@/hooks/useProjects';
 import { useTranslations } from '@/hooks/useTranslations';
 
@@ -21,13 +22,10 @@ interface Row {
   projects: number;
 }
 
-const CHART_GRID = '#1f2937';
-const CHART_TICK = '#8893a7';
-const BAR_COLOR = '#00d4aa';
-
 export function DevPortfolioChart() {
   const t = useTranslations();
   const { projects } = useProjects();
+  const chart = useChartColors();
 
   const data = useMemo<Row[]>(() => {
     const map = new Map<string, Row>();
@@ -70,16 +68,16 @@ export function DevPortfolioChart() {
             layout="vertical"
             margin={{ top: 0, right: 10, bottom: 0, left: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-            <XAxis type="number" tick={{ fontSize: 11, fill: CHART_TICK }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+            <XAxis type="number" tick={{ fontSize: 11, fill: chart.tick }} />
             <YAxis
               dataKey="name"
               type="category"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               width={120}
             />
             <RTooltip content={renderTooltip} cursor={{ fill: 'rgba(127,127,127,0.05)' }} />
-            <Bar dataKey="units" fill={BAR_COLOR} radius={[0, 3, 3, 0]} />
+            <Bar dataKey="units" fill={chart.accent} radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

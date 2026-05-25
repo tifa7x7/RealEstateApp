@@ -1,4 +1,4 @@
--- CrimeaDevTracker initial schema
+-- RealEstateApp initial schema
 -- Tables: projects, units, profiles, favorites, fav_units, saved_calculations, rental_properties
 -- RLS: public read on projects/units; per-user read/write on user-owned tables.
 

@@ -28,9 +28,9 @@ export function MobileNav() {
   const pathname = usePathname();
 
   const tabs: readonly MobileTab[] = [
-    { href: '/', label: t.tabs.table, icon: Search },
-    { href: '/analytics', label: t.tabs.analytics, icon: BarChart3 },
+    { href: '/', label: t.tabs.search, icon: Search },
     { href: '/map', label: t.tabs.map, icon: MapIcon },
+    { href: '/analytics', label: t.tabs.analytics, icon: BarChart3 },
     { href: '/calculator', label: t.tabs.calculator, icon: Calculator },
     { href: '/account', label: t.auth.myAccount, icon: User },
   ];
@@ -38,7 +38,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Мобильная навигация"
-      className="md:hidden fixed bottom-0 inset-x-0 z-[100] border-t border-[var(--border)] bg-[var(--bg)]"
+      className="no-print md:hidden fixed bottom-0 inset-x-0 z-[100] border-t border-[var(--border)] bg-[var(--bg)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="grid grid-cols-5">

@@ -1,7 +1,9 @@
 'use client';
 
 import { Card } from '@/components/ui/Card';
+import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { useLocale, useTranslations } from '@/hooks/useTranslations';
+import { classifyCalcSection } from '@/lib/calculator';
 import { MARKET_DATA } from '@/lib/constants';
 import { fmt } from '@/lib/formatters';
 import type { CalcObject, CalcResults } from '@/lib/types';
@@ -26,12 +28,16 @@ export function CalcResultsSummary({ object, results }: CalcResultsSummaryProps)
   const t = useTranslations();
   const { locale } = useLocale();
 
+  const costTier = classifyCalcSection('cost', object);
+  const mortgageTier = classifyCalcSection('mortgage', object);
+  const rentalTier = classifyCalcSection('rental', object);
+  const exitTier = classifyCalcSection('exit', object);
+  const metricsTier = classifyCalcSection('metrics', object);
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
-          {t.calc.totalCost}
-        </div>
+        <SectionHeader title={t.calc.totalCost} tier={costTier} />
         <div
           className="text-[26px] font-semibold tabular-nums leading-tight"
           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
@@ -56,18 +62,19 @@ export function CalcResultsSummary({ object, results }: CalcResultsSummaryProps)
 
       {object.useMortgage && (
         <Card>
-          <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
-            {t.calc.mortgageSection}
-          </div>
-          <MortgageBreakdown mortgage={results.mortgage} />
+          <SectionHeader title={t.calc.mortgageSection} tier={mortgageTier} />
+          <MortgageBreakdown
+            mortgage={results.mortgage}
+            familyRate={object.familyRate}
+            marketRate={object.marketRate}
+            subsidyLimit={object.subsidyLimit}
+          />
         </Card>
       )}
 
       {object.useRental && (
         <Card>
-          <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
-            {t.calc.rentalSection}
-          </div>
+          <SectionHeader title={t.calc.rentalSection} tier={rentalTier} />
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
             <Row label={t.calc.grossIncome} value={fmt.price(results.grossAnnual, locale)} />
             <Row label={t.calc.effectiveIncome} value={fmt.price(results.effAnnual, locale)} />
@@ -94,9 +101,7 @@ export function CalcResultsSummary({ object, results }: CalcResultsSummaryProps)
 
       {object.useExit && (
         <Card>
-          <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
-            {t.calc.exitSection}
-          </div>
+          <SectionHeader title={t.calc.exitSection} tier={exitTier} />
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
             <Row label={t.calc.projectedSale} value={fmt.price(results.projectedSale, locale)} />
             <Row label={t.calc.netProceeds} value={fmt.price(results.netProceeds, locale)} />
@@ -127,9 +132,7 @@ export function CalcResultsSummary({ object, results }: CalcResultsSummaryProps)
       )}
 
       <Card>
-        <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
-          {t.calc.metricsSection}
-        </div>
+        <SectionHeader title={t.calc.metricsSection} tier={metricsTier} />
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
           <Row label={t.calc.ownInvested} value={fmt.price(results.ownInvested, locale)} />
           {object.useMortgage && (
@@ -143,6 +146,23 @@ export function CalcResultsSummary({ object, results }: CalcResultsSummaryProps)
           )}
         </dl>
       </Card>
+    </div>
+  );
+}
+
+function SectionHeader({
+  title,
+  tier,
+}: {
+  title: string;
+  tier: 'verified' | 'estimated' | 'user-input';
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 mb-3">
+      <span className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
+        {title}
+      </span>
+      <ConfidenceBadge tier={tier} compact />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
+import { Sheet } from '@/components/ui/Sheet';
 import { useLocale } from '@/hooks/useTranslations';
 import { FilterPanel } from './FilterPanel';
 
@@ -22,9 +22,9 @@ export function MobileFilterButton() {
         <SlidersHorizontal size={14} aria-hidden="true" />
         {label}
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title={label} size="md">
+      <Sheet open={open} onClose={() => setOpen(false)} title={label} side="bottom">
         <FilterPanel />
-      </Modal>
+      </Sheet>
     </>
   );
 }

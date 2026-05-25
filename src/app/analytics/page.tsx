@@ -1,10 +1,4 @@
-import { Suspense } from 'react';
-import { AmenityImpactChart } from '@/components/analytics/AmenityImpactChart';
-import { ClassDistributionChart } from '@/components/analytics/ClassDistributionChart';
-import { DevPortfolioChart } from '@/components/analytics/DevPortfolioChart';
-import { PriceHeatmap } from '@/components/analytics/PriceHeatmap';
-import { ValueQuadrantChart } from '@/components/analytics/ValueQuadrantChart';
-import { ChartSkeleton } from '@/components/ui/Skeletons';
+import { AnalyticsContent } from '@/components/analytics/AnalyticsContent';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
@@ -23,27 +17,7 @@ export default function AnalyticsPage() {
       >
         Аналитика рынка
       </h1>
-
-      <Suspense fallback={<ChartSkeleton />}>
-        <ValueQuadrantChart />
-      </Suspense>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<ChartSkeleton />}>
-          <ClassDistributionChart />
-        </Suspense>
-        <Suspense fallback={<ChartSkeleton />}>
-          <DevPortfolioChart />
-        </Suspense>
-      </div>
-
-      <Suspense fallback={<ChartSkeleton />}>
-        <PriceHeatmap />
-      </Suspense>
-
-      <Suspense fallback={<ChartSkeleton />}>
-        <AmenityImpactChart />
-      </Suspense>
+      <AnalyticsContent />
     </div>
   );
 }

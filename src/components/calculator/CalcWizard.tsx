@@ -1,12 +1,14 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
-import { Check, RotateCcw, Save } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
+import { Printer, RotateCcw, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { useToast } from '@/components/providers/ToastProvider';
 import { useCalculator } from '@/hooks/useCalculator';
+import { usePaywall } from '@/hooks/usePaywall';
 import { useSavedCalcs } from '@/hooks/useSavedCalcs';
 import { useTranslations } from '@/hooks/useTranslations';
 import { CalcInput } from './CalcInput';
@@ -15,6 +17,8 @@ import { CashflowForecast } from './CashflowForecast';
 import { CatalogPicker } from './CatalogPicker';
 import { ComparisonTable } from './ComparisonTable';
 import { ExitSection } from './ExitSection';
+import { FinishingGradeSelector } from './FinishingGradeSelector';
+import { MobileResultPill } from './MobileResultPill';
 import { ObjectTabs } from './ObjectTabs';
 import { Rankings } from './Rankings';
 import { RentalSection } from './RentalSection';
@@ -88,23 +92,29 @@ function ToggleCard({
 
 export function CalcWizard() {
   const t = useTranslations();
+  const toast = useToast();
   const { object, setField, reset, results, objects } = useCalculator();
   const { canSave, save, saved } = useSavedCalcs();
+  const { allowed: canExport } = usePaywall('exports');
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<string | null>(null);
-  const [justSaved, setJustSaved] = useState(false);
 
-  useEffect(() => {
-    if (!justSaved) return;
-    const timer = window.setTimeout(() => setJustSaved(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, [justSaved]);
+  const handlePrint = () => {
+    if (!canExport) {
+      setUpgradeReason(
+        'Экспорт расчёта в PDF — функция Pro. В Pro вы можете сохранить результаты как PDF, отправить партнёру или приложить к ипотечной заявке.',
+      );
+      setUpgradeOpen(true);
+      return;
+    }
+    if (typeof window !== 'undefined') window.print();
+  };
 
   const handleSave = async () => {
     const result = await save();
     if (result.ok) {
-      setJustSaved(true);
+      toast.success('Сохранено');
       return;
     }
     setUpgradeReason(
@@ -118,7 +128,7 @@ export function CalcWizard() {
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 flex flex-col gap-4 min-w-0">
+        <div className="no-print flex-1 flex flex-col gap-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1
               className="text-[20px] md:text-[24px] font-semibold"
@@ -126,38 +136,40 @@ export function CalcWizard() {
             >
               {t.calc.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="no-print flex flex-wrap items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setCatalogOpen(true)}>
                 {t.calc.fillCatalog}
               </Button>
-              <Button
-                variant={justSaved ? 'ghost' : 'primary'}
-                size="sm"
-                onClick={handleSave}
-                disabled={justSaved}
-              >
-                {justSaved ? (
-                  <>
-                    <Check size={14} aria-hidden="true" />
-                    Сохранено
-                  </>
-                ) : (
-                  <>
-                    <Save size={14} aria-hidden="true" />
-                    Сохранить
-                    {!canSave && (
-                      <span
-                        className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tabular-nums"
-                        style={{
-                          background:
-                            'color-mix(in srgb, var(--premium) 15%, transparent)',
-                          color: 'var(--premium)',
-                        }}
-                      >
-                        Pro
-                      </span>
-                    )}
-                  </>
+              <Button variant="primary" size="sm" onClick={handleSave}>
+                <Save size={14} aria-hidden="true" />
+                Сохранить
+                {!canSave && (
+                  <span
+                    className="ml-1 px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tabular-nums"
+                    style={{
+                      background:
+                        'color-mix(in srgb, var(--premium) 15%, transparent)',
+                      color: 'var(--premium)',
+                    }}
+                  >
+                    Pro
+                  </span>
+                )}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handlePrint}>
+                <Printer size={14} aria-hidden="true" />
+                PDF
+                {!canExport && (
+                  <span
+                    className="ml-1 px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tabular-nums"
+                    style={{
+                      background:
+                        'color-mix(in srgb, var(--premium) 15%, transparent)',
+                      color: 'var(--premium)',
+                    }}
+                  >
+                    Pro
+                  </span>
                 )}
               </Button>
               <button
@@ -238,14 +250,22 @@ export function CalcWizard() {
                 min={0}
                 step={10000}
               />
-              <CalcInput
-                label={t.calc.renovation}
-                value={object.renovation}
-                onChange={(v) => setField('renovation', v)}
-                suffix="₽"
-                min={0}
-                step={50000}
-              />
+              <div className="sm:col-span-2 flex flex-col gap-3">
+                <FinishingGradeSelector
+                  area={object.area}
+                  value={object.renovation}
+                  onChange={(v) => setField('renovation', v)}
+                />
+                <CalcInput
+                  label={t.calc.renovation}
+                  value={object.renovation}
+                  onChange={(v) => setField('renovation', v)}
+                  suffix="₽"
+                  min={0}
+                  step={50000}
+                  tooltip="Подбирается из уровня отделки выше. Можете задать вручную."
+                />
+              </div>
               <CalcInput
                 label={t.calc.stateDuty}
                 value={object.stateDuty}
@@ -379,13 +399,14 @@ export function CalcWizard() {
           <CashflowForecast />
         </div>
 
-        <aside className="lg:w-96 shrink-0">
+        <aside className="lg:w-96 shrink-0 print-target">
           <div className="lg:sticky lg:top-[120px]">
             <CalcResultsSummary object={object} results={results} />
           </div>
         </aside>
       </div>
 
+      <MobileResultPill />
       <CatalogPicker open={catalogOpen} onClose={() => setCatalogOpen(false)} />
       <UpgradePrompt
         open={upgradeOpen}

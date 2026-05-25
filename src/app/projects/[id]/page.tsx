@@ -17,12 +17,12 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Project pages are dynamic instead of SSG. Reason: pre-Phase-8 we could
-// safely emit 18 static pages, but with the Supabase data layer (and its
-// transitive deps) on the build path, Next.js's Windows worker pool exhausts
-// (`spawn UNKNOWN` / `STATUS_STACK_BUFFER_OVERRUN`) when generating that many
-// pages in one shot. Same trade-off the unit pages took in Phase 2.
-export const dynamic = 'force-dynamic';
+// ISR — 10-minute revalidation. Project data rarely changes faster than
+// that, and ISR keeps the highest-traffic detail pages cached at the edge
+// while still picking up Supabase mutations. Phase 14 replaces the previous
+// `force-dynamic` (which was a Phase-8 Windows-worker workaround and is
+// independent of the runtime caching decision).
+export const revalidate = 600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;

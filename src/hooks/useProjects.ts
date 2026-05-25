@@ -65,8 +65,11 @@ function parseNumber(value: string | null, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-async function fetchProjectsViaApi(): Promise<Project[]> {
-  const res = await fetch('/api/projects');
+async function fetchProjectsViaApi(query?: string): Promise<Project[]> {
+  const url = query
+    ? `/api/projects?q=${encodeURIComponent(query)}`
+    : '/api/projects';
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`projects fetch failed: ${res.status}`);
   const json = (await res.json()) as { data: Project[] | null; error: string | null };
   if (!json.data) throw new Error(json.error ?? 'no data');
@@ -85,9 +88,16 @@ export function useProjects(): UseProjectsResult {
   const favorites = useAppStore((s) => s.favorites);
   const supabaseEnabled = isSupabaseConfigured();
 
+  // When Supabase is configured AND there's a search query, route through the
+  // full-text-search RPC (Phase 14). Otherwise we fetch the full list once
+  // and let `filterProjects` narrow it client-side. The seed-fallback path
+  // (no Supabase) always uses the bundled list + client-side `String.includes`.
+  const rawQuery = searchParams.get('q')?.trim() ?? '';
+  const useServerSearch = supabaseEnabled && rawQuery.length > 0;
+
   const { data: source = PROJECTS } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchProjectsViaApi,
+    queryKey: useServerSearch ? ['projects', 'fts', rawQuery] : ['projects'],
+    queryFn: () => fetchProjectsViaApi(useServerSearch ? rawQuery : undefined),
     initialData: PROJECTS as Project[],
     staleTime: 5 * 60_000,
     enabled: supabaseEnabled,

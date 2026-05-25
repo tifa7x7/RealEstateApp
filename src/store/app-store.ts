@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { PROJECTS } from '@/data/projects';
 import { defaultCalcObject } from '@/lib/calculator';
+import type { PriceAlert } from '@/lib/api/alerts';
 import type {
   CalcObject,
   Locale,
@@ -21,6 +22,18 @@ interface UserPrefsState {
   userEmail: string;
   savedCalcs: SavedCalc[];
   rentalProperties: RentalProperty[];
+  /**
+   * Phase 11 — first-run calculator UX. False until the user explicitly
+   * dismisses the wizard or completes step 3. Drives whether `/calculator`
+   * renders `CalcWizardSteps` (false) or the full `CalcWizard` form (true).
+   */
+  calcWizardSeen: boolean;
+  /**
+   * Phase 16 — onboarding nudge for price alerts. Set to true once the user
+   * either accepts or dismisses the inline strip on the favorites surface
+   * so it stops re-appearing. Persisted so the choice survives reloads.
+   */
+  alertsNudgeDismissed: boolean;
 }
 
 interface UserPrefsActions {
@@ -40,17 +53,28 @@ interface UserPrefsActions {
     patch: Partial<RentalProperty>,
   ) => void;
   removeRentalProperty: (id: number | string) => void;
+  setCalcWizardSeen: (seen: boolean) => void;
+  setAlertsNudgeDismissed: (dismissed: boolean) => void;
 }
 
 interface UIState {
   showMarketRef: boolean;
   compareIds: number[];
+  /**
+   * Phase 16 — in-memory cache of the authenticated user's price alerts.
+   * Hydrated by `useSupabaseUserDataSync`; not persisted (server is the
+   * source of truth, no offline write-through for alerts).
+   */
+  priceAlerts: PriceAlert[];
 }
 
 interface UIActions {
   setShowMarketRef: (value: boolean) => void;
   toggleCompare: (id: number) => void;
   clearCompare: () => void;
+  setPriceAlerts: (alerts: PriceAlert[]) => void;
+  upsertPriceAlert: (alert: PriceAlert) => void;
+  removePriceAlert: (id: string) => void;
 }
 
 interface CalculatorState {
@@ -133,6 +157,8 @@ export const useAppStore = create<AppStore>()(
       userEmail: '',
       savedCalcs: [],
       rentalProperties: [],
+      calcWizardSeen: false,
+      alertsNudgeDismissed: false,
 
       setLocale: (locale) => set({ locale }),
       setTier: (currentTier) => set({ currentTier }),
@@ -174,10 +200,14 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({
           rentalProperties: s.rentalProperties.filter((p) => p.id !== id),
         })),
+      setCalcWizardSeen: (calcWizardSeen) => set({ calcWizardSeen }),
+      setAlertsNudgeDismissed: (alertsNudgeDismissed) =>
+        set({ alertsNudgeDismissed }),
 
       // ui (not persisted)
       showMarketRef: false,
       compareIds: [],
+      priceAlerts: [],
       setShowMarketRef: (showMarketRef) => set({ showMarketRef }),
       toggleCompare: (id) =>
         set((s) => {
@@ -188,6 +218,19 @@ export const useAppStore = create<AppStore>()(
           return { compareIds: [...s.compareIds, id] };
         }),
       clearCompare: () => set({ compareIds: [] }),
+      setPriceAlerts: (priceAlerts) => set({ priceAlerts }),
+      upsertPriceAlert: (alert) =>
+        set((s) => {
+          const idx = s.priceAlerts.findIndex((a) => a.id === alert.id);
+          if (idx >= 0) {
+            const next = [...s.priceAlerts];
+            next[idx] = alert;
+            return { priceAlerts: next };
+          }
+          return { priceAlerts: [alert, ...s.priceAlerts] };
+        }),
+      removePriceAlert: (id) =>
+        set((s) => ({ priceAlerts: s.priceAlerts.filter((a) => a.id !== id) })),
 
       // calculator (persisted)
       calcObjects: [defaultCalcObject()],
@@ -256,7 +299,7 @@ export const useAppStore = create<AppStore>()(
         }),
     }),
     {
-      name: 'crimea-dev-tracker',
+      name: 'real-estate-app',
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState, version) => {
@@ -276,6 +319,8 @@ export const useAppStore = create<AppStore>()(
         rentalProperties: state.rentalProperties,
         calcObjects: state.calcObjects,
         activeCalcIndex: state.activeCalcIndex,
+        calcWizardSeen: state.calcWizardSeen,
+        alertsNudgeDismissed: state.alertsNudgeDismissed,
       }),
     },
   ),

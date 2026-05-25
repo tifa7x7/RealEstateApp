@@ -7,8 +7,10 @@ import { Header } from '@/components/layout/Header';
 import { LocaleHtmlLang } from '@/components/layout/LocaleHtmlLang';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { CompareLauncher } from '@/components/projects/CompareLauncher';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { SupabaseSync } from '@/components/providers/SupabaseSync';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 import { SITE_URL, buildMetadata } from '@/lib/seo';
 
 import '@/styles/globals.css';
@@ -28,7 +30,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   ...buildMetadata({
-    title: 'Аналитика инвестиций в новостройки Крыма',
+    title: 'Найди квартиру и просчитай инвестицию',
     path: '/',
   }),
 };
@@ -54,14 +56,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <ThemeProvider>
           <QueryProvider>
-            <LocaleHtmlLang />
-            <SupabaseSync />
-            <Header />
-            <main id="main-content" className="flex-1 pb-20 md:pb-0">
-              {children}
-            </main>
-            <Footer />
-            <MobileNav />
+            <ToastProvider>
+              <LocaleHtmlLang />
+              <SupabaseSync />
+              <Header />
+              <main id="main-content" className="flex-1 pb-20 md:pb-0">
+                {children}
+              </main>
+              <Footer />
+              <MobileNav />
+              <CompareLauncher />
+            </ToastProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

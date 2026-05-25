@@ -4,15 +4,16 @@
  * cards consistent.
  *
  * `NEXT_PUBLIC_SITE_URL` should be set in production to the canonical origin
- * (e.g. https://crimea-dev-tracker.ru). It feeds `metadataBase` so relative
+ * (e.g. https://real-estate-app.ru). It feeds `metadataBase` so relative
  * paths resolve correctly in OG / Twitter URLs.
  */
 import type { Metadata } from 'next';
 
-export const SITE_NAME = 'CrimeaDevTracker';
-export const SITE_TITLE_DEFAULT = 'CrimeaDevTracker — Аналитика инвестиций в новостройки';
+export const SITE_NAME = 'RealEstateApp';
+export const SITE_TITLE_DEFAULT =
+  'RealEstateApp — Найди квартиру и просчитай инвестицию';
 export const SITE_DESCRIPTION =
-  'Bloomberg-уровневая аналитика инвестиций в новостройки Крыма для покупателей и инвесторов.';
+  'Цены застройщиков, ипотека, аренда и срок окупаемости — в одном калькуляторе. Новостройки Крыма, без брокера, без таблиц Excel.';
 
 const RAW_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 export const SITE_URL = RAW_SITE_URL.replace(/\/$/, '');
@@ -49,7 +50,7 @@ export function buildMetadata({
       alternateLocale: ['en_US'],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: fullTitle,
       description,
     },

@@ -2,16 +2,18 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchAlerts } from '@/lib/api/alerts';
 import {
   bulkImportFavorites,
   fetchFavorites,
 } from '@/lib/api/favorites';
 import { fetchPortfolio, bulkImportPortfolio } from '@/lib/api/portfolio';
+import { fetchProfile } from '@/lib/api/profile';
 import { bulkImportSavedCalcs, fetchSavedCalcs } from '@/lib/api/saved-calcs';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store/app-store';
 
-const MIGRATION_FLAG_PREFIX = 'crimea-dev-tracker:migrated:';
+const MIGRATION_FLAG_PREFIX = 'real-estate-app:migrated:';
 
 function hasMigrated(userId: string): boolean {
   if (typeof window === 'undefined') return true;
@@ -81,16 +83,23 @@ export function useSupabaseUserDataSync(): void {
         }
 
         // Step 2: hydrate store from Supabase (source of truth).
-        const [favs, calcs, portfolio] = await Promise.all([
+        const [favs, calcs, portfolio, profile, alerts] = await Promise.all([
           fetchFavorites(client!),
           fetchSavedCalcs(client!),
           fetchPortfolio(client!),
+          fetchProfile(client!, userId),
+          fetchAlerts(client!),
         ]);
         useAppStore.setState({
           favorites: favs.projectIds,
           favUnits: favs.favUnitKeys,
           savedCalcs: calcs,
           rentalProperties: portfolio,
+          priceAlerts: alerts,
+          // Server-side tier is canonical (Phase 15). When the profile fetch
+          // returned data, write it through; otherwise leave the store's
+          // previous value (which defaults to 'free' for fresh sessions).
+          ...(profile ? { currentTier: profile.tier } : {}),
         });
       } catch (err) {
         if (process.env.NODE_ENV !== 'production') {

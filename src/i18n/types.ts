@@ -1,8 +1,16 @@
 export interface Translations {
   appName: string;
   appSub: string;
+  hero: {
+    headline: string;
+    subhead: string;
+    searchPlaceholder: string;
+    cityPillsLabel: string;
+    marketSnapshot: string;
+    marketSnapshotHide: string;
+  };
   tabs: {
-    table: string;
+    search: string;
     analytics: string;
     map: string;
     calculator: string;
@@ -107,6 +115,39 @@ export interface Translations {
     totalPrice: string;
     aiDesign: string;
     description: string;
+  };
+  confidence: {
+    verifiedLabel: string;
+    verifiedHint: string;
+    estimatedLabel: string;
+    estimatedHint: string;
+    userInputLabel: string;
+    userInputHint: string;
+    unverifiedLabel: string;
+    unverifiedHint: string;
+  };
+  wizard: {
+    intro: string;
+    introBody: string;
+    stepLabel: string;
+    of: string;
+    next: string;
+    back: string;
+    finish: string;
+    skipToExpert: string;
+    expertMode: string;
+    wizardMode: string;
+    step1Title: string;
+    step1Hint: string;
+    step2Title: string;
+    step2Hint: string;
+    step2YesLabel: string;
+    step2NoLabel: string;
+    step3Title: string;
+    step3Hint: string;
+    step3YesLabel: string;
+    step3NoLabel: string;
+    finishHint: string;
   };
   calc: {
     title: string;
@@ -247,6 +288,38 @@ export interface Translations {
     clear: string;
     close: string;
     amenityCount: string;
+  };
+  alerts: {
+    sectionTitle: string;
+    sectionHint: string;
+    addForProject: string;
+    addForUnit: string;
+    removeForProject: string;
+    removeForUnit: string;
+    thresholdLabel: string;
+    thresholdHint: string;
+    proRealtime: string;
+    freeWeeklyDigest: string;
+    nudgeTitle: string;
+    nudgeBody: string;
+    nudgeEnable: string;
+    nudgeDismiss: string;
+    nudgeEnabled: string;
+    limitReachedFree: string;
+    saveFailed: string;
+    signInRequired: string;
+    enabled: string;
+    disabled: string;
+    enable: string;
+    disable: string;
+    deleteAlert: string;
+    empty: string;
+    activeOn: string;
+    wholeProject: string;
+    unit: string;
+    lastNotifiedNever: string;
+    lastNotified: string;
+    upgradeForRealtime: string;
   };
   common: {
     pro: string;

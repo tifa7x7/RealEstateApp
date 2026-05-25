@@ -1,10 +1,19 @@
 import type { Translations } from './types';
 
 export const en: Translations = {
-  appName: 'CrimeaDevTracker',
+  appName: 'RealEstateApp',
   appSub: 'New-Build Investment Analytics',
+  hero: {
+    headline: 'Find a Crimean apartment and run the numbers',
+    subhead:
+      'Developer prices, mortgage, rental income and payback in one calculator. No broker, no spreadsheets.',
+    searchPlaceholder: 'Project, district, or developer',
+    cityPillsLabel: 'Cities',
+    marketSnapshot: 'Market snapshot',
+    marketSnapshotHide: 'Hide',
+  },
   tabs: {
-    table: 'Table',
+    search: 'Search',
     analytics: 'Analytics',
     map: 'Map',
     calculator: 'Calculator',
@@ -109,6 +118,42 @@ export const en: Translations = {
     totalPrice: 'Total Price',
     aiDesign: 'AI Interior Design (coming soon)',
     description: 'Description',
+  },
+  confidence: {
+    verifiedLabel: 'Verified',
+    verifiedHint: 'Confirmed by the developer or sourced from a catalog unit.',
+    estimatedLabel: 'Estimated',
+    estimatedHint: 'Calculated from market averages. You can refine it.',
+    userInputLabel: 'Your input',
+    userInputHint: 'You overrode the default. The calculation uses your value.',
+    unverifiedLabel: 'Unverified',
+    unverifiedHint: 'Not confirmed by the developer. Double-check before deciding.',
+  },
+  wizard: {
+    intro: 'What are we calculating?',
+    introBody:
+      'In 3 steps: monthly payment, rental income, and payback period.',
+    stepLabel: 'Step',
+    of: 'of',
+    next: 'Next',
+    back: 'Back',
+    finish: 'Show result',
+    skipToExpert: 'Open all parameters',
+    expertMode: 'All parameters',
+    wizardMode: 'Quick estimate',
+    step1Title: 'How much does the apartment cost?',
+    step1Hint: 'City, type, area, price — enough for a baseline calculation.',
+    step2Title: 'Are you taking a mortgage?',
+    step2Hint:
+      'We apply the family mortgage at 6% up to the cap and the market rate on the rest.',
+    step2YesLabel: 'Yes, I need a mortgage',
+    step2NoLabel: 'No, cash purchase',
+    step3Title: 'Will you rent it out?',
+    step3Hint:
+      'We add rental income and a payback estimate if you plan to lease it.',
+    step3YesLabel: 'Yes, renting out',
+    step3NoLabel: 'No, living in it',
+    finishHint: 'Done. Results are right there — see the numbers immediately.',
   },
   calc: {
     title: 'Investment Calculator',
@@ -249,6 +294,43 @@ export const en: Translations = {
     clear: 'Clear',
     close: 'Close',
     amenityCount: 'Amenities',
+  },
+  alerts: {
+    sectionTitle: 'Price alerts',
+    sectionHint:
+      'Get an email when a unit or project from your favorites changes price.',
+    addForProject: 'Notify me on price changes',
+    addForUnit: 'Notify me on this unit',
+    removeForProject: 'Remove alert',
+    removeForUnit: 'Remove alert',
+    thresholdLabel: 'Trigger threshold',
+    thresholdHint:
+      'You get an email when the price changes by at least this percentage.',
+    proRealtime: 'Pro — real-time on every change',
+    freeWeeklyDigest: 'Free — weekly digest',
+    nudgeTitle: 'Watch prices on your favorites?',
+    nudgeBody:
+      'We send an email when a price drops on one of your units. Free — weekly; Pro — real-time.',
+    nudgeEnable: 'Enable alerts',
+    nudgeDismiss: 'Not now',
+    nudgeEnabled: 'Alerts enabled',
+    limitReachedFree:
+      'Free tier limit is 5 alerts. Pro removes the cap and sends real-time emails.',
+    saveFailed: 'Could not save. Try again later.',
+    signInRequired: 'Sign in to enable alerts.',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    enable: 'Enable',
+    disable: 'Disable',
+    deleteAlert: 'Delete',
+    empty: 'No active alerts yet.',
+    activeOn: 'Active alerts',
+    wholeProject: 'whole project',
+    unit: 'unit',
+    lastNotifiedNever: 'Not sent yet',
+    lastNotified: 'Last email:',
+    upgradeForRealtime:
+      'Want real-time alerts instead of a weekly digest? Pro removes the cap.',
   },
   common: {
     pro: 'Pro',

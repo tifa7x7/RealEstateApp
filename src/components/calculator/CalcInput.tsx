@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Info } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export interface CalcInputProps {
   label: string;
@@ -32,8 +33,6 @@ export function CalcInput({
 }: CalcInputProps) {
   const autoId = useId();
   const id = inputId ?? autoId;
-  const tipId = `${id}-tip`;
-  const [showTip, setShowTip] = useState(false);
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`.trim()}>
@@ -43,32 +42,15 @@ export function CalcInput({
       >
         <span>{label}</span>
         {tooltip && (
-          <span
-            className="relative inline-flex"
-            onMouseEnter={() => setShowTip(true)}
-            onMouseLeave={() => setShowTip(false)}
-            onFocus={() => setShowTip(true)}
-            onBlur={() => setShowTip(false)}
-          >
+          <Tooltip content={tooltip}>
             <button
               type="button"
-              aria-describedby={showTip ? tipId : undefined}
               aria-label="Подсказка"
               className="text-[var(--text-muted)] hover:text-[var(--text-dim)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
             >
               <Info size={13} aria-hidden="true" />
             </button>
-            {showTip && (
-              <div
-                role="tooltip"
-                id={tipId}
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-3 py-2 rounded text-[12px] leading-snug z-50 shadow-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)]"
-                style={{ maxWidth: 260, whiteSpace: 'normal' }}
-              >
-                {tooltip}
-              </div>
-            )}
-          </span>
+          </Tooltip>
         )}
       </label>
       <div className="relative">

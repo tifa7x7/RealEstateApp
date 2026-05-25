@@ -1,0 +1,35 @@
+name: Performance budgets
+
+# Runs on every PR + push to main. Fails the build if any route's First Load
+# JS exceeds its budget in CLAUDE.md.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check-budgets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build (capture output)
+        id: build
+        run: npm run build | tee build.log
+
+      - name: Assert performance budgets
+        run: cat build.log | node scripts/check-perf-budgets.mjs

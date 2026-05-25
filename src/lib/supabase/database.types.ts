@@ -235,9 +235,101 @@ export type Database = {
         >;
         Relationships: [];
       };
+      price_snapshots: {
+        Row: {
+          project_id: number;
+          unit_id: string;
+          captured_at: string;
+          price: number;
+        };
+        Insert: {
+          project_id: number;
+          unit_id: string;
+          captured_at?: string;
+          price: number;
+        };
+        Update: Partial<Database['public']['Tables']['price_snapshots']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'price_snapshots_project_id_unit_id_fkey';
+            columns: ['project_id', 'unit_id'];
+            referencedRelation: 'units';
+            referencedColumns: ['project_id', 'id'];
+          },
+        ];
+      };
+      price_alerts: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: number;
+          unit_id: string | null;
+          threshold_pct: number;
+          channel: 'email';
+          active: boolean;
+          last_notified_at: string | null;
+          unsubscribe_token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: number;
+          unit_id?: string | null;
+          threshold_pct?: number;
+          channel?: 'email';
+          active?: boolean;
+          last_notified_at?: string | null;
+          unsubscribe_token?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['price_alerts']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'price_alerts_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      /** Full-text search RPC. See supabase/migrations/0002_fts.sql. */
+      search_projects: {
+        Args: { query: string };
+        Returns: Database['public']['Tables']['projects']['Row'][];
+      };
+      /** Phase 16 — snapshot today's price for every watched unit. */
+      capture_price_snapshots: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      /** Phase 16 — list alert rows whose latest snapshot crossed the threshold. */
+      compute_pending_alerts: {
+        Args: Record<string, never>;
+        Returns: {
+          alert_id: string;
+          user_id: string;
+          project_id: number;
+          unit_id: string | null;
+          previous_price: number;
+          current_price: number;
+          delta_pct: number;
+          threshold_pct: number;
+          last_notified_at: string | null;
+          unsubscribe_token: string;
+        }[];
+      };
+      /** Phase 16 — stamp last_notified_at on the given alerts. */
+      mark_alerts_notified: {
+        Args: { alert_ids: string[] };
+        Returns: void;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Calculator, Heart } from 'lucide-react';
+import { AlertToggleButton } from '@/components/projects/AlertToggleButton';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useAppStore } from '@/store/app-store';
 
@@ -42,6 +43,8 @@ export function UnitActions({ projectId, unitId }: UnitActionsProps) {
         />
         {isFav ? t.detail.removeFav : t.detail.addFav}
       </button>
+
+      <AlertToggleButton projectId={projectId} unitId={unitId} />
 
       <Link
         href={calcHref}

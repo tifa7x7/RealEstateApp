@@ -27,6 +27,11 @@ const VARIANT_ICON: Record<ToastVariant, typeof Info> = {
   error: AlertCircle,
 };
 
+/**
+ * Presentational toast card. Position-agnostic: the consumer (typically
+ * `ToastProvider`) is responsible for placement on the page. For one-off
+ * direct use, pass `className="fixed bottom-4 right-4 z-[300]"` or similar.
+ */
 export function Toast({
   message,
   variant = 'info',
@@ -48,7 +53,7 @@ export function Toast({
     <div
       role={isUrgent ? 'alert' : 'status'}
       aria-live={isUrgent ? 'assertive' : 'polite'}
-      className={`fixed bottom-4 right-4 z-[300] flex items-start gap-3 px-4 py-3 rounded-lg shadow-xl ` +
+      className={`flex items-start gap-3 px-4 py-3 rounded-lg shadow-xl ` +
         `text-[13px] bg-[var(--bg-card)] text-[var(--text)] ${className}`.trim()}
       style={{ border: `1px solid ${accent}` }}
     >

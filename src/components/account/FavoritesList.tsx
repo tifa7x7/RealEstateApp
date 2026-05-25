@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart } from 'lucide-react';
+import { AlertOnboardingNudge } from '@/components/account/AlertOnboardingNudge';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { UnitCard } from '@/components/projects/UnitCard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -34,6 +35,8 @@ export function FavoritesList() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AlertOnboardingNudge />
+
       {favoriteProjects.length > 0 && (
         <section className="flex flex-col gap-3">
           <SectionLabel count={favoriteProjects.length}>ЖК</SectionLabel>

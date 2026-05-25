@@ -1,12 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Heart, MapPin, Scale } from 'lucide-react';
+import { AlertToggleButton } from '@/components/projects/AlertToggleButton';
 import { Badge } from '@/components/ui/Badge';
+import {
+  ConfidenceBadge,
+  projectDataConfidenceToTier,
+} from '@/components/ui/ConfidenceBadge';
+import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { useCompare } from '@/hooks/useCompare';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useTranslations } from '@/hooks/useTranslations';
 import { CLASS_COLORS, STATUS_COLORS } from '@/lib/constants';
 import type { Project } from '@/lib/types';
-import { useAppStore } from '@/store/app-store';
 
 export interface ProjectHeroProps {
   project: Project;
@@ -14,13 +22,19 @@ export interface ProjectHeroProps {
 
 export function ProjectHero({ project: p }: ProjectHeroProps) {
   const t = useTranslations();
-  const favorites = useAppStore((s) => s.favorites);
-  const toggleFavorite = useAppStore((s) => s.toggleFavorite);
-  const compareIds = useAppStore((s) => s.compareIds);
-  const toggleCompare = useAppStore((s) => s.toggleCompare);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const compare = useCompare();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const isFav = favorites.includes(p.id);
-  const inCompare = compareIds.includes(p.id);
+  const isFav = isFavorite(p.id);
+  const inCompare = compare.isInCompare(p.id);
+
+  const handleCompare = () => {
+    const result = compare.toggle(p.id);
+    if (!result.ok && result.reason === 'limit-reached') {
+      setUpgradeOpen(true);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -48,7 +62,7 @@ export function ProjectHero({ project: p }: ProjectHeroProps) {
               {p.city}, {p.district}
             </span>
           </div>
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap items-center gap-1.5 mt-3">
             <Badge color={STATUS_COLORS[p.status]} size="sm">
               {p.status}
             </Badge>
@@ -56,13 +70,15 @@ export function ProjectHero({ project: p }: ProjectHeroProps) {
               {p.classType}
             </Badge>
             <Badge size="sm">{p.buildingType}</Badge>
+            <ConfidenceBadge tier={projectDataConfidenceToTier(p.dataConfidence)} />
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <AlertToggleButton projectId={p.id} />
           <button
             type="button"
-            onClick={() => toggleCompare(p.id)}
+            onClick={handleCompare}
             aria-pressed={inCompare}
             aria-label={inCompare ? t.compare.clear : t.detail.addCompare}
             className={
@@ -98,6 +114,11 @@ export function ProjectHero({ project: p }: ProjectHeroProps) {
           </button>
         </div>
       </div>
+      <UpgradePrompt
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        description={`Free-тариф позволяет сравнивать до ${compare.limit} объектов. Pro расширяет до 5 и открывает сравнение по всем метрикам.`}
+      />
     </div>
   );
 }

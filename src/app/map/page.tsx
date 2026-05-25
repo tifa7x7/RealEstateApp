@@ -3,7 +3,7 @@ import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
   title: 'Карта объектов',
-  description: 'Интерактивная карта новостроек Крыма с фильтрами по статусу и классу.',
+  description: 'Интерактивная карта новостроек с фильтрами по статусу и классу.',
   path: '/map',
 });
 

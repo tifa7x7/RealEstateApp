@@ -93,6 +93,51 @@ export async function fetchProjects(
 }
 
 /**
+ * Server-side full-text search via the `search_projects` RPC. Returns the
+ * matched Project list including units. When `client` is null or the RPC
+ * call fails, falls back to the in-memory string-includes filter (the
+ * original `filterProjects` path used by `useProjects`).
+ *
+ * The seed-fallback path keeps the prior offline-first dev behavior; users
+ * who run without Supabase configured still get search, just without
+ * Russian-language morphology.
+ */
+export async function searchProjects(
+  client: AppSupabaseClient | null,
+  query: string,
+): Promise<Project[] | null> {
+  if (!client) return null;
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+
+  const [projectsRes, unitsRes] = await Promise.all([
+    client.rpc('search_projects', { query: trimmed }),
+    client.from('units').select('*'),
+  ]);
+
+  if (projectsRes.error || unitsRes.error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        '[searchProjects] falling back to seed/string-filter:',
+        projectsRes.error ?? unitsRes.error,
+      );
+    }
+    return null;
+  }
+
+  const unitsByProject = new Map<number, Unit[]>();
+  for (const row of unitsRes.data) {
+    const list = unitsByProject.get(row.project_id) ?? [];
+    list.push(unitFromRow(row));
+    unitsByProject.set(row.project_id, list);
+  }
+
+  return projectsRes.data.map((row) =>
+    projectFromRow(row, unitsByProject.get(row.id) ?? []),
+  );
+}
+
+/**
  * Fetch a single project by id. Returns `null` if not found.
  */
 export async function fetchProject(

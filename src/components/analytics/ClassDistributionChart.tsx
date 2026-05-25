@@ -14,9 +14,9 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { useChartColors } from '@/hooks/useChartColors';
 import { useProjects } from '@/hooks/useProjects';
 import { useLocale, useTranslations } from '@/hooks/useTranslations';
-import { CLASS_COLORS } from '@/lib/constants';
 import { fmt } from '@/lib/formatters';
 import type { ProjectClass } from '@/lib/types';
 
@@ -27,14 +27,12 @@ interface Row {
 }
 
 const CLASSES: readonly ProjectClass[] = ['Эконом', 'Комфорт', 'Бизнес', 'Премиум'];
-const CHART_GRID = '#1f2937';
-const CHART_TICK = '#8893a7';
-const LINE_COLOR = '#f59e0b';
 
 export function ClassDistributionChart() {
   const t = useTranslations();
   const { locale } = useLocale();
   const { projects } = useProjects();
+  const chart = useChartColors();
 
   const data = useMemo<Row[]>(
     () =>
@@ -79,29 +77,29 @@ export function ClassDistributionChart() {
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART_TICK }} />
-            <YAxis yAxisId="l" tick={{ fontSize: 11, fill: CHART_TICK }} width={30} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: chart.tick }} />
+            <YAxis yAxisId="l" tick={{ fontSize: 11, fill: chart.tick }} width={30} />
             <YAxis
               yAxisId="r"
               orientation="right"
-              tick={{ fontSize: 11, fill: CHART_TICK }}
+              tick={{ fontSize: 11, fill: chart.tick }}
               tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
               width={40}
             />
             <RTooltip content={renderTooltip} cursor={{ fill: 'rgba(127,127,127,0.05)' }} />
             <Bar yAxisId="l" dataKey="count" radius={[3, 3, 0, 0]}>
               {data.map((e, i) => (
-                <Cell key={i} fill={CLASS_COLORS[e.name]} fillOpacity={0.7} />
+                <Cell key={i} fill={chart.class[e.name]} fillOpacity={0.7} />
               ))}
             </Bar>
             <Line
               yAxisId="r"
               type="monotone"
               dataKey="avgPrice"
-              stroke={LINE_COLOR}
+              stroke={chart.warning}
               strokeWidth={2}
-              dot={{ r: 3, fill: LINE_COLOR }}
+              dot={{ r: 3, fill: chart.warning }}
             />
           </ComposedChart>
         </ResponsiveContainer>

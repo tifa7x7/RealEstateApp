@@ -21,6 +21,29 @@
   --premium: #a855f7;
   --danger: #ef4444;
 
+  /* Semantic tokens — project status (mapped to the brand palette).
+     Components MUST reference these, not the foundation tokens directly. */
+  --status-projected: var(--secondary);
+  --status-construction: var(--warning);
+  --status-handover: var(--premium);
+  --status-completed: var(--accent);
+
+  /* Semantic tokens — project class. */
+  --class-economy: var(--text-dim);
+  --class-comfort: var(--secondary);
+  --class-business: var(--warning);
+  --class-premium: var(--premium);
+
+  /* Semantic tokens — unit status. */
+  --unit-available: var(--accent);
+  --unit-reserved: var(--warning);
+  --unit-sold: var(--danger);
+
+  /* Semantic tokens — data confidence (Phase 12 will surface). */
+  --confidence-verified: var(--accent);
+  --confidence-estimated: var(--text-dim);
+  --confidence-user-input: var(--secondary);
+
   color-scheme: dark;
 }
 
@@ -43,6 +66,25 @@
   --warning: #d97706;
   --premium: #9333ea;
   --danger: #dc2626;
+
+  /* Semantic tokens — same mappings, light-theme palette. */
+  --status-projected: var(--secondary);
+  --status-construction: var(--warning);
+  --status-handover: var(--premium);
+  --status-completed: var(--accent);
+
+  --class-economy: var(--text-dim);
+  --class-comfort: var(--secondary);
+  --class-business: var(--warning);
+  --class-premium: var(--premium);
+
+  --unit-available: var(--accent);
+  --unit-reserved: var(--warning);
+  --unit-sold: var(--danger);
+
+  --confidence-verified: var(--accent);
+  --confidence-estimated: var(--text-dim);
+  --confidence-user-input: var(--secondary);
 
   color-scheme: light;
 }
@@ -88,6 +130,34 @@ input,
 textarea,
 select {
   font-family: inherit;
+}
+
+/* Print stylesheet — used by the calculator's "Сохранить как PDF" flow.
+   The user picks "Save as PDF" in the print dialog; the resulting document
+   contains only the result panel (plus a minimal brand mark). Add `.no-print`
+   to any chrome element that should be hidden, or `.print-only` to elements
+   that should appear only on print. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  /* Strip CSS-variable backgrounds on cards so the printed output reads cleanly
+     on white paper regardless of dark/light theme. */
+  .print-target,
+  .print-target * {
+    background: transparent !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+  }
+  /* Force a clean page margin. */
+  @page {
+    margin: 20mm;
+  }
 }
 
 /* Leaflet theme overrides (only apply where the Leaflet bundle is loaded) */

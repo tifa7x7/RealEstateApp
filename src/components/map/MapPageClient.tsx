@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { DistrictPanel } from './DistrictPanel';
 import { MapFilters } from './MapFilters';
 
 const ProjectMap = dynamic(() => import('./ProjectMap'), {
@@ -14,14 +15,30 @@ const ProjectMap = dynamic(() => import('./ProjectMap'), {
 });
 
 export function MapPageClient() {
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+
   return (
     <div className="flex flex-col gap-4">
       <Suspense fallback={null}>
         <MapFilters />
       </Suspense>
-      <Suspense fallback={null}>
-        <ProjectMap />
-      </Suspense>
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0">
+          <Suspense fallback={null}>
+            <ProjectMap onSelectDistrict={setSelectedDistrict} />
+          </Suspense>
+        </div>
+        {selectedDistrict && (
+          <div className="lg:w-80 xl:w-96 shrink-0">
+            <Suspense fallback={null}>
+              <DistrictPanel
+                district={selectedDistrict}
+                onClose={() => setSelectedDistrict(null)}
+              />
+            </Suspense>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
