@@ -2,7 +2,7 @@
 
 > **Living document.** Check this before starting any implementation task. Update the status table and phase checklists as work completes.
 
-**Last updated:** 2026-05-25 (Phases 10–16 complete; code ships; live snapshot job + email provider integration pending)
+**Last updated:** 2026-05-27 (Phases 10–16 complete; Phases 17–22 added from Solgt.no competitor adaptation. See [CompetitorReviewResults.md](CompetitorReviewResults.md) Section K11 for the prioritized backlog this draws from; [CLAUDE.md](CLAUDE.md) for the Surface model rules these phases implement.)
 
 ---
 
@@ -27,6 +27,12 @@
 | 14 | Performance, SEO, content channel | ✅ Complete |
 | 15 | Real Supabase + billing + Pro tier completion | ✅ Complete (code; provider integration pending) |
 | 16 | Retention loop: price alerts | ✅ Complete (code; edge function + email provider integration pending) |
+| 17 | Lists refactor (multi-list favorites) | ⬜ Not started |
+| 18 | Surface model foundation (route groups + shells) | ⬜ Not started |
+| 19 | Marketing surface build-out | ⬜ Not started |
+| 20 | Marketing content: SEO landings | ⬜ Not started |
+| 21 | Product polish from Solgt patterns | ⬜ Not started |
+| 22 | Far-future (parked: time-series + paste-a-link) | ⬜ Not started |
 
 Status legend: ⬜ Not started · 🟡 In progress · ✅ Complete
 
@@ -611,6 +617,163 @@ Already covered above. Verified passing.
 
 ---
 
+### Phase 17 — Lists refactor (multi-list favorites) ⬜
+
+**Goal:** Replace the flat `favorites` + `fav_units` bucket with named, owned, optionally-shared `lists`. Every user gets a default `Избранное` list at signup; Pro users can create unlimited additional named lists, follow other users' public lists, and collaborate on shared lists. Phase 16 alerts re-key from per-favorite to per-list.
+
+**Why now:** Solgt's "Lists" surface is the single biggest finding from the signed-in walkthrough ([CompetitorReviewResults.md K5](CompetitorReviewResults.md#k5-lists--the-most-undervalued-surface-in-the-entire-walkthrough)). It transforms favorites from "I starred this" into a curatorial/social layer that compounds Pro tier value. Doing it before the Surface model refactor (Phase 18) means the new list components land in the right `components/product/` location once.
+
+**Deliverables:**
+- [ ] **Schema migration `supabase/migrations/0004_lists.sql`.** Tables: `lists` (`id`, `owner_user_id`, `name`, `visibility {private|unlisted|public}`, timestamps), `list_items` (`list_id`, `project_id?`, `unit_id?`, `position`, `note`, `added_at`), `list_followers` (`list_id`, `follower_user_id`, `alerts_enabled`, `created_at`), `list_collaborators` (`list_id`, `user_id`, `role {editor|viewer}`), `list_comments` (`id`, `list_id`, `author_user_id`, `body`, `created_at`). RLS: owners full access; collaborators per role; followers read-only on items + comments; public lists readable by anyone.
+- [ ] **Data backfill in the same migration.** For every distinct `user_id` in `favorites` ∪ `fav_units`: insert a `lists` row named `Избранное` (visibility `private`), then insert `list_items` mirroring the rows from `favorites` (`project_id`) and `fav_units` (`unit_id`). Idempotent — re-running the migration on a fresh project is a no-op.
+- [ ] **Drop the `favorites` and `fav_units` tables** in the same migration after backfill. Keep RLS policies intact on `list_items`.
+- [ ] **`src/lib/api/lists.ts`** — CRUD for lists, items, followers, collaborators, comments. Returns typed results in the existing `{ data, error }` shape.
+- [ ] **`src/hooks/useLists.ts`** — replaces `useFavorites`. Returns `{ defaultList, lists, createList, renameList, deleteList, addItem, removeItem, follow, unfollow, ... }` with tier-aware limits via `usePaywall('multi-list')`. Free tier hard-caps at 1 list with 25 items; Pro is unbounded.
+- [ ] **Phase 16 alerts re-key.** Migration `0005_alerts_per_list.sql` adds `list_id` to `price_alerts`, backfills existing rows by inserting them into the user's default list and pointing the alert at that list, drops `project_id` + `unit_id` from `price_alerts`. The `capture_price_snapshots()` and `compute_pending_alerts()` RPCs update to traverse `list_items` instead of `favorites`/`fav_units`.
+- [ ] **UI: list management page** `/account/lists` — table of user's lists with create/rename/delete/share actions. Per-row visibility toggle, item count, last-updated timestamp.
+- [ ] **UI: single-list view** `/account/lists/[id]` — header (name + visibility + share button), member chips if collaborated, ProjectCard/UnitCard grid for items, comments thread at bottom.
+- [ ] **UI: featured lists rail** on `/account/lists` — right-column curated lists with `🔒 Pro` lock for visibility tiers that need it. Seed 4-6 editorial lists (e.g., *"Лучшие цены октября в Симферополе"*, *"ЖК у моря под маткапитал"*) seeded by a script.
+- [ ] **UI: "Add to list" affordance** on ProjectCard / UnitCard / ProjectHero replacing the existing heart toggle. Default action = add to `Избранное`; menu opens to pick another list or create new. The heart icon retained as visual shorthand for "in any of my lists."
+- [ ] **`AlertToggleButton` rewires from per-favorite to per-list.** A list with `alerts_enabled = true` triggers alerts on any item in it.
+- [ ] **Migration on auth signup.** Update the existing `handle_new_user()` trigger to insert a `lists` row named `Избранное` for the new user.
+
+**Acceptance:** A user who upgrades to Pro can create a list named "Инвестиции 2026," add 30 projects to it, mark it `public`, share the URL with a friend, and receive notifications when any item's price drops. A free user can't create a second list but can follow the friend's public list and receive its weekly digest. The migration runs cleanly against a database populated with Phase 16 favorites + alerts data.
+
+**Sized:** ~2 weeks. Mostly bounded by the migration + UI surface count.
+
+---
+
+### Phase 18 — Surface model foundation (route groups + shells) ⬜
+
+**Goal:** Mechanically reshape the codebase to match the Surface model from [CLAUDE.md](CLAUDE.md#surface-model). Route groups `app/(marketing)/` and `app/(product)/`, `MarketingShell` + `ProductShell` layout components, theme-by-surface enforcement, and the `components/marketing/` + `components/product/` directory split. No new features — this phase is the architectural foundation that Phases 19, 20, 21 build on.
+
+**Why now:** Solgt's signed-in walkthrough confirms the marketing/product visual separation is load-bearing for conversion. Doing the structural refactor as its own phase keeps the diff reviewable and avoids mixing file-moves with feature work.
+
+**Deliverables:**
+- [ ] **Route groups created.** `app/(marketing)/layout.tsx` wraps in `<MarketingShell>`; `app/(product)/layout.tsx` wraps in `<ProductShell chrome="top">`. Existing pages move accordingly:
+  - `(marketing)/`: `page.tsx`, `blog/`, `projects/[id]/`, future `pricing/`, `products/`, `applications/`, `about/`, `contact/`
+  - `(product)/`: `calculator/`, `map/`, `analytics/`, `account/`, future `lists/` (Phase 17 output)
+- [ ] **`src/components/layout/MarketingShell.tsx`** — wraps children in: top nav (Header variant with marketing mega-menus), forced light theme via a `data-surface="marketing"` attribute on `<body>`, Footer.
+- [ ] **`src/components/layout/ProductShell.tsx`** — wraps children in: chrome chosen via `chrome={'top'|'rail'}` prop (default `'top'`, currently uses existing Header + MobileNav), user-preferred theme via `data-surface="product"`, Footer omitted on full-screen surfaces.
+- [ ] **`src/components/layout/ProductRail.tsx`** — left-rail variant for ProductShell. Built but not used by default; activates when CLAUDE.md's "6-7 surface" trigger fires.
+- [ ] **Theme-by-surface enforcement.** `globals.css` adds `[data-surface="marketing"]` selector that forces light theme tokens regardless of `data-theme`. Both attributes coexist on `<html>` / `<body>` per shell.
+- [ ] **Components moved into the new directory structure.** `components/projects/` → `components/product/projects/`, same for `calculator/`, `analytics/`, `map/`, `account/`. Import path updates handled with `grep -r "@/components/projects" | xargs sed -i` (PR will be a ~200-line diff of import changes).
+- [ ] **Branded shell types.** `MarketingShell` and `ProductShell` accept children of type `MarketingChildren | ProductChildren` (branded — empty interfaces). Components in `components/marketing/` export a `MarketingChildren`-compatible type; same for product. Wrong-import is a compile error, not a runtime bug.
+- [ ] **`<MarketingShell>` + `<ProductShell>` smoke test.** Each loads in a Cypress-style or Playwright integration test that asserts theme attribute is correct and the right nav variant is rendered. New CI step.
+- [ ] **Existing surfaces continue to work.** `/calculator`, `/map`, `/analytics`, `/account/*` render the same UI; the only visible difference is the `data-surface` attribute and that the marketing homepage now renders in light theme by default. Hero content unchanged in this phase — that's Phase 19.
+
+**Acceptance:** All existing routes still work; theme inverts at the marketing/product boundary; `tsc --noEmit` is green; `next build` passes; the perf budgets CI step from Phase 14 stays under 180/240 kB. Architecturally, `components/marketing/` and `components/product/` exist as separate trees, and trying to import a marketing component into a product surface fails at compile time.
+
+**Sized:** ~1 week. Mostly mechanical; the branded-type setup is the only subtle bit.
+
+**Decision risk:** the file moves will conflict with any in-flight feature work. Schedule this phase when no Phase 17 work is open, or rebase carefully.
+
+---
+
+### Phase 19 — Marketing surface build-out ⬜
+
+**Goal:** Implement the marketing-surface UX patterns Solgt validated. Calculator-as-hero homepage swap, `/pricing` page with 3-tier table, the full `MarketingSlab` component library, and the marketing-copy sweep that turns the homepage into a conversion funnel.
+
+**Why now:** Phase 18 built the foundation; this phase fills it. CLAUDE.md's hero rule (*"calculator screenshot + serif headline + paired CTA"*) needs concrete components to enforce.
+
+**Deliverables:**
+- [ ] **`src/components/marketing/MarketingSlab.tsx`** — generic block wrapper accepting `{ eyebrow, headline, subhead, primaryCta, secondaryCta, screenshotSrc?, layout: 'image-left' | 'image-right' | 'image-below' | 'text-only' }`. Used by every other marketing component.
+- [ ] **`src/components/marketing/MarketingCTAPair.tsx`** — `[Зарегистрироваться бесплатно →]` + `[Посмотреть тарифы →]` button pair, configurable variants but never single. Mounted at the bottom of every marketing page.
+- [ ] **`src/components/marketing/PricingTable.tsx`** — 3-column table (Free / Pro Monthly / Pro Yearly −20%) with Monthly/Yearly toggle pill. Each column: tier name, price in ₽/month, target audience one-liner, ✓ feature bullets, primary CTA. "Recommended" badge on Pro Yearly.
+- [ ] **`src/components/marketing/PersonaRow.tsx`** — 4-column row with persona name + one-paragraph use-case. Initial 4: *Покупатель квартиры* / *Ищу район* / *Инвестор-новичок* / *Любопытствующий*.
+- [ ] **`src/components/marketing/FAQAccordion.tsx`** — single-line question + chevron rows, no internal dividers. Each row expands to a 1-2 paragraph answer with optional inline link to a blog post.
+- [ ] **`src/components/marketing/StatStrip.tsx`** — big purple numeral + tiny caps caption pattern. 3-4 cells per strip. Initial homepage stats: ЖК count, available units, cities, range of prices.
+- [ ] **`src/components/marketing/TestimonialCarousel.tsx`** — serif quote + small attribution (initial state: placeholder "*Скоро здесь будут отзывы пользователей*"; the slot exists for when real testimonials arrive).
+- [ ] **`app/(marketing)/page.tsx`** — full homepage rewrite per CLAUDE.md hero rule. Slab order: calculator-screenshot hero with serif `Реши, стоит ли покупать` headline + `[Открыть калькулятор →]` + `[Посмотреть тарифы →]` → 3-card objection-handling row → trust strip (placeholder for developer logos) → alternating feature blocks (Calculator / Map / Analytics / Lists) → capability summary → persona row → testimonial carousel slot → pricing reference → FAQ → final CTA → footer.
+- [ ] **`app/(marketing)/pricing/page.tsx`** — standalone /pricing page using `<PricingTable>` + a FAQ accordion + a final CTA. Hooks into `UpgradePrompt`'s deep-link target.
+- [ ] **`UpgradePrompt` deep-links to `/pricing`** — secondary CTA changes from "Позже" to "Посмотреть тарифы →" linking out to `/pricing` with the original feature key in the query (`?from=multi-object`) so the pricing page can highlight which Pro feature triggered the visit.
+- [ ] **Marketing-copy sweep.** All marketing-surface headlines, subheads, and CTA labels go through the [`brand_identity/positioning-voice.md`](brand_identity/positioning-voice.md) template ("democratization" framing, outcome-promise headlines, paired CTAs). Specifically rewrite the hero, the 3-card row, the pricing copy, the FAQ entries, the final CTA.
+- [ ] **Calculator screenshot asset.** Either a real Playwright-rendered screenshot of the calculator wizard's step-3 results panel (preferred) or a stylized SVG mockup. Stored in `public/marketing/calculator-hero.png`.
+- [ ] **i18n.** All new marketing-surface strings into `src/i18n/{ru,en}.ts` under a new `t.marketing.*` namespace.
+
+**Acceptance:** An unauthenticated visitor landing on `/` sees a calculator-screenshot hero, the canonical slab order, and a CTA pair leading to /signup or /pricing. The `/pricing` page renders all 3 tiers with feature bullets that match what's actually implemented (no advertising unimplemented features per CLAUDE.md rule). All copy follows the democratization template.
+
+**Sized:** ~2-3 weeks. Most of the time goes into the slab library and the copy sweep, not the page assembly.
+
+**Decision risk:** the calculator screenshot is the marketing site's headline asset and will dominate first impressions. Worth doing it well — a real Playwright screenshot beats a mockup. If we can't get one looking polished, fall back to the SVG mockup but flag it as Phase-21 polish work.
+
+---
+
+### Phase 20 — Marketing content: SEO landings ⬜
+
+**Goal:** Use the slab library from Phase 19 to ship 6 product landing pages and 6 application landing pages, each targeting a high-intent Russian-language search query. Mirrors Solgt's `/produkter/*` + `/bruksomrader/*` structure.
+
+**Why now:** Solgt has 11 such SEO landing pages (5 products + 6 applications) and they're the marketing surface's organic-traffic moat. Russian-language new-build SEO is uncrowded — high-value land grab.
+
+**Deliverables:**
+- [ ] **`app/(marketing)/products/[slug]/page.tsx`** — dynamic route consuming `src/content/products/index.ts` (typed registry). Each entry: `{ slug, eyebrow, headline, subhead, screenshotSrc, valueBullets[], featureBlocks[], statStrip, personas[], faq[], finalCta }`.
+- [ ] **6 product landings** (`src/content/products/*.ts`):
+  - `kalkulyator-investitsii` — *Калькулятор инвестиций в новостройку*
+  - `karta-novostroek` — *Интерактивная карта новостроек Крыма*
+  - `analitika-rynka` — *Аналитика рынка новостроек*
+  - `prognoz-dokhodnosti` — *10-летний прогноз доходности (Pro)*
+  - `uvedomleniya-o-tsene` — *Уведомления о цене (Pro)*
+  - `spiski-i-sravnenie` — *Списки и сравнение объектов (Pro)*
+- [ ] **`app/(marketing)/applications/[slug]/page.tsx`** — same shape, consuming `src/content/applications/index.ts`.
+- [ ] **6 application landings:**
+  - `pokupka-pervoi-kvartiry` — *Покупка первой квартиры: с чего начать*
+  - `semeinaya-ipoteka-2026` — *Семейная ипотека в 2026 году*
+  - `matkapital-na-novostroiku` — *Маткапитал на новостройку*
+  - `investitsiya-v-arendu` — *Инвестиция в арендную недвижимость*
+  - `vybor-zk-pod-rebenka* — *Выбор ЖК под семью с детьми*
+  - `kupit-na-kotlovane` — *Покупка на котловане: риски и выгоды*
+- [ ] **All 12 pages added to `sitemap.ts`** with appropriate `priority` and `changefreq`.
+- [ ] **All 12 pages get `opengraph-image.tsx`** using the Phase 14 OG generator + the product/application title as the headline.
+- [ ] **Mega-menu in `MarketingShell`'s Header populates from the same registries.** Hovering `Products ▾` shows the 6 product cards; hovering `Applications ▾` shows the 6 application cards. Each card is `{ icon, name, one-line description }` — matches Solgt's mega-menu pattern.
+- [ ] **Per-page FAQ** with 5-8 questions answered in prose. Each answer can link to a blog post (Phase 14's `/blog/[slug]`) for deep reading.
+- [ ] **Blog template uses `MarketingSlab`.** Existing 6 blog posts get cosmetic re-render through the new component so editorial layout is consistent with the SEO landings.
+
+**Acceptance:** 12 new pages live, all sitemap-indexed, all rendering the canonical slab order. Russian-language SEO queries like *"калькулятор ипотеки новостройка"* or *"семейная ипотека 2026"* return one of our pages within 6 months of indexing.
+
+**Sized:** ~2 weeks. Pages are mostly content + screenshot assembly; the dynamic-route plumbing is small.
+
+**Decision risk:** content quality matters. If the Russian copy is mid, the pages won't rank. Consider commissioning a real editor for the article-grade text after the structural shipping.
+
+---
+
+### Phase 21 — Product polish from Solgt patterns ⬜
+
+**Goal:** Ship the Tier-1 immediate wins from CompetitorReviewResults.md K9: blur-paywall ProGate variant + inline tier badges, per-chart explanatory copy on `/analytics`, named-query chips on project listings, map data-layer toggle, header notification bell. None of these are big features individually; collectively they lift the perceived product sophistication by a noticeable amount.
+
+**Why now:** Independent of Phases 19/20 — touches product surfaces that Phase 18 already separated. Can run in parallel with Phase 19/20 if a second contributor is available.
+
+**Deliverables:**
+- [ ] **`<ProGate mode="blur">`** — refactor `src/components/ui/ProGate.tsx` to support `mode={'replace'|'blur'}`. Blur mode renders children with `filter: blur(4px) opacity(0.6) pointer-events-none` and overlays a compact card top-center reading "Доступно в Pro · Открыть тарифы →". Replace mode is the existing behavior. Audit all current call sites; default switch to `mode="blur"` where applicable.
+- [ ] **Inline `🔒 Pro` badges** — new `<TierLock tier="pro">` primitive in `components/ui/`. Used in dropdowns, menu items, and chip labels next to Pro-only options. The 6th named-query chip *Высокий ROI* and the calculator's *forecast* / *exit* sections become first call sites.
+- [ ] **Per-chart explanatory copy.** Refactor each analytics chart to wrap in `<ChartCard title="..." hint="...">`. Initial hints (1-3 sentences each, Russian):
+  - ValueQuadrant: "*Каждая точка — ЖК. Чем выше — дороже за метр; чем правее — дальше от моря. Ищите точки в левом нижнем углу — это лучшее соотношение цены и расположения.*"
+  - PriceHeatmap: "*Тёмные ячейки — дороже за метр. Сравните одинаковый класс между городами, чтобы понять, где переплачиваете за бренд района, а где за реальное местоположение.*"
+  - DevPortfolio: "*Чем длиннее полоса, тем больше квартир в продаже у застройщика. Большие портфели обычно означают более стабильные цены и более конкурентные предложения.*"
+  - AmenityImpact: "*Зелёные столбики — удобства, добавляющие к средней цене за метр; красные — снижающие. Используйте при сравнении: за охраняемую территорию платить стоит, за пафосный лобби — нет.*"
+  - ClassDistribution: "*Столбики — количество ЖК в каждом классе; линия — средняя цена за метр. Большой разрыв между «Бизнес» и «Премиум» значит, что класс «Премиум» переоценён.*"
+- [ ] **Named-query chips** — `src/lib/named-queries.ts` defines the chip registry per CLAUDE.md spec. `src/components/product/projects/NamedQueryChips.tsx` renders the 6 chips above the project grid on `/` (product side). Each chip has a live count badge derived from `useProjects()`. Pro chips render with `<TierLock>`.
+- [ ] **Map data-layer toggle** — `src/components/product/map/MapLayerSelector.tsx` mounted top-center of the map. Initial layers: *Все · Сдан · Строится · Проектируется* (status-based, no tier locks because we don't have transaction data). Selection writes to URL `?layer=...`. Tier-locked layers parked until we have data that warrants them.
+- [ ] **Header notification bell** — `src/components/layout/NotificationBell.tsx`. Bell icon top-right in `<ProductShell>`. Badge counter (count of un-viewed alerts from Phase 16). Dropdown shows last 10 triggered alerts with link to the affected unit + a "Mark all read" action. New `notification_views` table or column to track read state per user.
+- [ ] **`useNotifications` hook** wrapping the bell's state.
+
+**Acceptance:** Free user opens `/calculator` and sees Pro-section results blurred with an inline upgrade card (no modal). Visiting `/analytics` shows each chart with prose above it. The homepage `/` shows 6 named-query chips above the project grid with live counts. Bell icon in the header reflects alert state.
+
+**Sized:** ~1-2 weeks. Each item is small; the variety adds up.
+
+---
+
+### Phase 22 — Far-future (parked) ⬜
+
+**Goal:** Track two items that depend on prerequisites outside our control. Not on the active schedule.
+
+**Items:**
+- **Time-series market-trends dashboard.** Solgt's signed-in Dashboard ([CompetitorReviewResults.md K6](CompetitorReviewResults.md#k6-dashboard-beta)) is six time-series charts with editorial prose. We can't ship the equivalent until Phase 16's `price_snapshots` table has accumulated ~6 months of data — line charts on 3 weeks of snapshots are misleading. **Prerequisite:** Phase 16's daily snapshot job has been running in production for ≥6 months. **Then:** new `/analytics/trends` route with 4-6 line charts (asking price/m² over time, supply count over time, days-on-market proxy from status transitions, %-change-by-class). Editorial copy on every chart.
+- **Paste-an-ad-link onramp.** Per [K8.12](CompetitorReviewResults.md#k8-what-were-missing-structurally-gap-list), the marketing homepage search input should accept a pasted URL from Avito / Cian / Domclick and parse the listing to pre-fill the calculator. **Prerequisite:** decision on which source(s) to integrate; agreement that scraping their public listings is acceptable (legal review). Each parser ~M effort.
+
+**Acceptance:** Either item moves out of "parked" when its prerequisite is met. Treat this phase as a tracker, not a commitment.
+
+---
+
 ## Decision log
 
 Append decisions here as they're made. Format: date, decision, rationale.
@@ -666,6 +829,13 @@ Append decisions here as they're made. Format: date, decision, rationale.
 - **2026-05-25** — **`UpgradePrompt` feature list trim/ship deadline = Phase 15.** Currently advertises PDF export and ad-free; neither is implemented. Either ship in Phase 15 or remove the bullets before launch. CLAUDE.md "What NOT to do" now forbids advertising unimplemented Pro features.
 - **2026-05-25** — **Phase 16 shipped as code with a manual deploy step**, same pattern as Phase 15's billing provider. The schema, RPCs, edge function, email templates, hooks, and UI are all in the repo. Going live needs three Supabase dashboard actions: apply `0003_price_alerts.sql`, deploy the edge function, schedule the cron. No more code changes required.
 - **2026-05-25** — **Free tier digest cadence = 7 days, enforced server-side in the dispatch function**, not client-side at write time. A user who upgrades from Free to Pro mid-week starts receiving real-time alerts on the next dispatch — no re-creation of alert rows needed. Same goes for downgrade. Tier change always takes effect immediately.
+- **2026-05-26** — **Solgt.no walkthrough analysis added** to [CompetitorReviewResults.md](CompetitorReviewResults.md) (Sections A-K) based on user-recorded videos of the signed-out marketing surface (7 mp4s) and the signed-in product (5 mp4s). 96 frames extracted via `Screen_dumps/_extract_frames.py`. The walkthrough surfaced the marketing/product visual split, the modular slab structure, the multi-list "Lists" surface, the blur-paywall pattern, the named-query chips, and the editorial dashboard pattern. K11 of the addendum contains a 17-item priority-ranked backlog.
+- **2026-05-27** — **Marketing/product surface split locked in.** [CLAUDE.md](CLAUDE.md) rewritten to codify two surface families: marketing (light theme, MarketingShell, calculator-as-hero on `/`, modular slabs ending in paired CTAs) and product (dark default, ProductShell with `chrome={'top'|'rail'}` prop, data-as-hero). Route groups `app/(marketing)/` and `app/(product)/` carry the shell choice via their layout files. Reason: Solgt's split is what makes their funnel work; we'd been conflating the surfaces.
+- **2026-05-27** — **Calculator-as-hero on the marketing homepage** (replacing the Phase-10 search hero on `/` for unauthenticated visitors). User decision after seeing Solgt's hero pattern in the videos. Rationale: the unconvinced visitor needs to *see* the product, not search through it; search-as-launcher is the post-login pattern. The Phase-10 search hero stays as the product-side homepage when we add `/app` or whatever the post-login launcher becomes.
+- **2026-05-27** — **Pricing moves from 2 tiers to 3** — Free / Pro Monthly / Pro Yearly (−20%). Same feature set across the two Pro variants; the discount is billing-cadence only. `usePaywall` continues to return `{ tier: 'free' | 'pro' }` — tier-billing is a UI concern at `<PricingTable>` and checkout, not at feature gates. A `Business` custom-tier slot is reserved in `UpgradePrompt`'s copy but not yet implemented; revisit when a developer/broker B2B inbound shows up.
+- **2026-05-27** — **Lists committed as Phase 17.** The flat `favorites` + `fav_units` schema collapses into `lists` + `list_items` with a backwards-compatible migration. Every user gets a default `Избранное` list at signup. Pro tier unlocks unlimited named lists, public/unlisted visibility, follow-others, comments, collaborators. Phase 16's `price_alerts` re-key from per-favorite to per-list — alerts become "notify me on any item in this list." This is what makes Pro feel like a *product upgrade* and not just a feature cap raise.
+- **2026-05-27** — **ProductShell `chrome` prop defaults to `'top'`**, with `'rail'` (Solgt-style left rail) deferred. Reason: we have 4 product surfaces today (calculator/map/analytics/account), Lists makes 5. The rail pays off at 6-7+. One-prop switch when the time comes — not worth pre-building.
+- **2026-05-27** — **6 new phases sequenced (17-22).** Phase 17 (Lists) before Phase 18 (Surface model) because Lists is closed scope and the components/ refactor in 18 will absorb the new files cleanly. Phases 19/20 sequential (19 builds the slab library, 20 uses it for SEO landings). Phase 21 (product polish) parallelable with 19/20. Phase 22 (time-series dashboard + paste-a-link) is parked behind real prerequisites (6 months of snapshot data; legal review on scraping).
 
 ---
 
