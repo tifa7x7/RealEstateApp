@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, Heart, type LucideIcon, Save, Settings } from 'lucide-react';
+import {
+  Briefcase,
+  Heart,
+  ListChecks,
+  type LucideIcon,
+  Save,
+  Settings,
+} from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
 
 interface TabConfig {
@@ -17,6 +24,7 @@ export function AccountTabs() {
 
   const tabs: TabConfig[] = [
     { href: '/account/favorites', label: t.auth.favorites, icon: Heart },
+    { href: '/account/lists', label: t.lists.tabLabel, icon: ListChecks },
     { href: '/account/saved', label: t.calc.title.split(' ')[0] ?? 'Расчёты', icon: Save },
     { href: '/account/portfolio', label: t.auth.myPortfolio, icon: Briefcase },
     { href: '/account/settings', label: t.auth.settings, icon: Settings },

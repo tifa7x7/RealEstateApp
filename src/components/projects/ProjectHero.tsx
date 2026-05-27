@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Heart, MapPin, Scale } from 'lucide-react';
+import { AddToListMenu } from '@/components/projects/AddToListMenu';
 import { AlertToggleButton } from '@/components/projects/AlertToggleButton';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -75,6 +76,7 @@ export function ProjectHero({ project: p }: ProjectHeroProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <AddToListMenu projectId={p.id} />
           <AlertToggleButton projectId={p.id} />
           <button
             type="button"

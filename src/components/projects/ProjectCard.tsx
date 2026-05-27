@@ -3,6 +3,7 @@
 import { type MouseEvent } from 'react';
 import Link from 'next/link';
 import { Building2, Heart, MapPin } from 'lucide-react';
+import { AddToListMenu } from '@/components/projects/AddToListMenu';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import {
@@ -66,23 +67,28 @@ export function ProjectCard({ project: p, className = '' }: ProjectCardProps) {
               compact
             />
           </div>
-          <button
-            type="button"
-            onClick={handleFavorite}
-            aria-label={isFav ? t.detail.removeFav : t.detail.addFav}
-            aria-pressed={isFav}
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-[var(--bg-card)]/80 backdrop-blur hover:bg-[var(--bg-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-          >
-            <Heart
-              size={14}
-              aria-hidden="true"
-              className={
-                isFav
-                  ? 'fill-[var(--accent)] text-[var(--accent)]'
-                  : 'text-[var(--text-dim)]'
-              }
-            />
-          </button>
+          <div className="absolute top-2 left-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleFavorite}
+              aria-label={isFav ? t.detail.removeFav : t.detail.addFav}
+              aria-pressed={isFav}
+              className="p-1.5 rounded-lg bg-[var(--bg-card)]/80 backdrop-blur hover:bg-[var(--bg-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            >
+              <Heart
+                size={14}
+                aria-hidden="true"
+                className={
+                  isFav
+                    ? 'fill-[var(--accent)] text-[var(--accent)]'
+                    : 'text-[var(--text-dim)]'
+                }
+              />
+            </button>
+            <div onClick={(e) => e.preventDefault()}>
+              <AddToListMenu projectId={p.id} />
+            </div>
+          </div>
         </div>
 
         <div className="p-4">
