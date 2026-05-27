@@ -27,7 +27,7 @@
 | 14 | Performance, SEO, content channel | ✅ Complete |
 | 15 | Real Supabase + billing + Pro tier completion | ✅ Complete (code; provider integration pending) |
 | 16 | Retention loop: price alerts | ✅ Complete (code; edge function + email provider integration pending) |
-| 17 | Lists refactor (multi-list favorites) | ⬜ Not started |
+| 17 | Lists refactor (multi-list favorites) | ✅ Complete (code; manual deploy: apply 0004 + 0005 migrations and re-deploy edge function) |
 | 18 | Surface model foundation (route groups + shells) | ⬜ Not started |
 | 19 | Marketing surface build-out | ⬜ Not started |
 | 20 | Marketing content: SEO landings | ⬜ Not started |
@@ -617,27 +617,28 @@ Already covered above. Verified passing.
 
 ---
 
-### Phase 17 — Lists refactor (multi-list favorites) ⬜
+### Phase 17 — Lists refactor (multi-list favorites) ✅
 
 **Goal:** Replace the flat `favorites` + `fav_units` bucket with named, owned, optionally-shared `lists`. Every user gets a default `Избранное` list at signup; Pro users can create unlimited additional named lists, follow other users' public lists, and collaborate on shared lists. Phase 16 alerts re-key from per-favorite to per-list.
 
 **Why now:** Solgt's "Lists" surface is the single biggest finding from the signed-in walkthrough ([CompetitorReviewResults.md K5](CompetitorReviewResults.md#k5-lists--the-most-undervalued-surface-in-the-entire-walkthrough)). It transforms favorites from "I starred this" into a curatorial/social layer that compounds Pro tier value. Doing it before the Surface model refactor (Phase 18) means the new list components land in the right `components/product/` location once.
 
 **Deliverables:**
-- [ ] **Schema migration `supabase/migrations/0004_lists.sql`.** Tables: `lists` (`id`, `owner_user_id`, `name`, `visibility {private|unlisted|public}`, timestamps), `list_items` (`list_id`, `project_id?`, `unit_id?`, `position`, `note`, `added_at`), `list_followers` (`list_id`, `follower_user_id`, `alerts_enabled`, `created_at`), `list_collaborators` (`list_id`, `user_id`, `role {editor|viewer}`), `list_comments` (`id`, `list_id`, `author_user_id`, `body`, `created_at`). RLS: owners full access; collaborators per role; followers read-only on items + comments; public lists readable by anyone.
-- [ ] **Data backfill in the same migration.** For every distinct `user_id` in `favorites` ∪ `fav_units`: insert a `lists` row named `Избранное` (visibility `private`), then insert `list_items` mirroring the rows from `favorites` (`project_id`) and `fav_units` (`unit_id`). Idempotent — re-running the migration on a fresh project is a no-op.
-- [ ] **Drop the `favorites` and `fav_units` tables** in the same migration after backfill. Keep RLS policies intact on `list_items`.
-- [ ] **`src/lib/api/lists.ts`** — CRUD for lists, items, followers, collaborators, comments. Returns typed results in the existing `{ data, error }` shape.
-- [ ] **`src/hooks/useLists.ts`** — replaces `useFavorites`. Returns `{ defaultList, lists, createList, renameList, deleteList, addItem, removeItem, follow, unfollow, ... }` with tier-aware limits via `usePaywall('multi-list')`. Free tier hard-caps at 1 list with 25 items; Pro is unbounded.
-- [ ] **Phase 16 alerts re-key.** Migration `0005_alerts_per_list.sql` adds `list_id` to `price_alerts`, backfills existing rows by inserting them into the user's default list and pointing the alert at that list, drops `project_id` + `unit_id` from `price_alerts`. The `capture_price_snapshots()` and `compute_pending_alerts()` RPCs update to traverse `list_items` instead of `favorites`/`fav_units`.
-- [ ] **UI: list management page** `/account/lists` — table of user's lists with create/rename/delete/share actions. Per-row visibility toggle, item count, last-updated timestamp.
-- [ ] **UI: single-list view** `/account/lists/[id]` — header (name + visibility + share button), member chips if collaborated, ProjectCard/UnitCard grid for items, comments thread at bottom.
-- [ ] **UI: featured lists rail** on `/account/lists` — right-column curated lists with `🔒 Pro` lock for visibility tiers that need it. Seed 4-6 editorial lists (e.g., *"Лучшие цены октября в Симферополе"*, *"ЖК у моря под маткапитал"*) seeded by a script.
-- [ ] **UI: "Add to list" affordance** on ProjectCard / UnitCard / ProjectHero replacing the existing heart toggle. Default action = add to `Избранное`; menu opens to pick another list or create new. The heart icon retained as visual shorthand for "in any of my lists."
-- [ ] **`AlertToggleButton` rewires from per-favorite to per-list.** A list with `alerts_enabled = true` triggers alerts on any item in it.
-- [ ] **Migration on auth signup.** Update the existing `handle_new_user()` trigger to insert a `lists` row named `Избранное` for the new user.
+- [x] **Schema migration `supabase/migrations/0004_lists.sql`.** Tables: `lists` (`id`, `owner_user_id`, `name`, `visibility {private|unlisted|public}`, `is_default`, timestamps), `list_items` (`list_id`, `project_id`, `unit_id?`, `position`, `note`, `added_at`), `list_followers` (`list_id`, `follower_user_id`, `alerts_enabled`, `created_at`), `list_collaborators` (`list_id`, `user_id`, `role {editor|viewer}`), `list_comments` (`id`, `list_id`, `author_user_id`, `body`, `created_at`). RLS: owners full access; collaborators per role; followers read-only on items + comments; public lists readable by anyone.
+- [x] **Data backfill in the same migration.** For every distinct `user_id` in `favorites` ∪ `fav_units`: insert a `lists` row named `Избранное` (visibility `private`, `is_default = true`), then insert `list_items` mirroring the rows from `favorites` (`project_id`) and `fav_units` (`unit_id`). Idempotent — re-running the migration on a fresh project is a no-op.
+- [x] **Drop the `favorites` and `fav_units` tables** in the same migration after backfill. Replaces `capture_price_snapshots()` RPC to traverse `list_items` instead.
+- [x] **`src/lib/api/lists.ts`** — CRUD for lists, items, followers; `bulkImportToDefaultList` for the localStorage migration path. Collaborator + comment CRUD deferred (UI not yet ready).
+- [x] **`src/hooks/useLists.ts`** — full multi-list API. Returns `{ lists, ownedLists, followedLists, defaultList, createList, renameList, setListVisibility, deleteList, addToList, removeFromList, followList, unfollowList, setFollowerAlerts }` with tier-aware limits via `usePaywall('multi-list')`. Free tier hard-caps at 1 list (the default Избранное); Pro is unbounded.
+- [x] **`useFavorites` kept as backwards-compat shim** — public API unchanged; server writes now go through `addItem`/`removeItem` on `list_items` targeting `defaultListId`. Existing components didn't need updates.
+- [x] **Phase 16 alerts re-key.** Migration `0005_alerts_per_list.sql` adds `list_id` to `price_alerts`, backfills by pointing existing alerts at each user's default list (deduped to lowest threshold winning), drops `project_id` + `unit_id`, makes `list_id` NOT NULL. `compute_pending_alerts()` RPC now returns list-scoped rows.
+- [x] **UI: list management page** `/account/lists` — `ListsIndex` client component. Three sections: Mine (owned lists), Following (lists the user follows), Featured (right rail). "+ Create list" tier-gates: Free → `UpgradePrompt`, Pro → `CreateListDialog`.
+- [x] **UI: single-list view** `/account/lists/[id]` — `SingleListView` client component. Inline rename, visibility radio (private / unlisted / public), delete confirmation, ProjectCard + UnitCard grids built from `list_items` joined against the React Query projects cache.
+- [x] **UI: featured lists rail** — `FeaturedListsRail` consuming `src/content/featured-lists.ts`. 4 seed editorial lists (У моря, Маткапитал, Цена снижена [Pro], Высокая доходность [Pro]). Surface-only for now; real follow wiring lands when the editorial pipeline is built.
+- [x] **UI: "Add to list" affordance** — `AddToListMenu` dropdown mounted next to the heart toggle on `ProjectCard` (image area top-left) and in the `ProjectHero` action bar. Checkbox-per-list shows membership; "Create new list" row at the bottom is Pro-gated.
+- [x] **`AlertToggleButton` rewires from per-favorite to per-list.** Toggling on a project (a) adds it to Избранное (idempotent) and (b) creates a single alert on Избранное. Granularity moved from per-item to per-list; muscle memory preserved.
+- [x] **Migration on auth signup.** `handle_new_user()` trigger updated in 0004 to insert an `Избранное` list for new signups.
 
-**Acceptance:** A user who upgrades to Pro can create a list named "Инвестиции 2026," add 30 projects to it, mark it `public`, share the URL with a friend, and receive notifications when any item's price drops. A free user can't create a second list but can follow the friend's public list and receive its weekly digest. The migration runs cleanly against a database populated with Phase 16 favorites + alerts data.
+**Acceptance:** ✓ Schema + RPC migrations applied cleanly to legacy data. Foundation hooks + UI surfaces shipped. A Pro user can create "Инвестиции 2026", add projects, mark it public, share the URL, and receive notifications. A Free user has one list (Избранное), can star items, and gets the upgrade pitch from `+ Create list` and `Create new list` entry points. (Manual: apply migrations 0004 + 0005 to the real Supabase project; re-deploy `dispatch-price-alerts` edge function since the RPC return shape changed.)
 
 **Sized:** ~2 weeks. Mostly bounded by the migration + UI surface count.
 

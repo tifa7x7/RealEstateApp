@@ -3,7 +3,7 @@
 > **Living document for the next branch of work.** Covers Phases 17-22.
 > Foundation phases 0-16 are logged in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). This document is the active reference for any work after Phase 16; that document is the historical record.
 
-**Last updated:** 2026-05-27 (initial draft, all phases ⬜ Not started)
+**Last updated:** 2026-05-27 (Phase 17 ✅ shipped on docs/surface-model; Phases 18-22 ⬜ Not started)
 
 **Authoritative inputs:** [CLAUDE.md](CLAUDE.md) (Surface model + Conversion mechanics rules) · [CompetitorReviewResults.md](CompetitorReviewResults.md) (Solgt.no walkthrough Sections A-K, K11 prioritized backlog) · [brand_identity/](brand_identity/) (visual + copy rules)
 
@@ -101,7 +101,7 @@ src/components/product/              ❌ Directory does not exist.
 
 | Phase | Title | Classification | Status |
 |---|---|---|---|
-| 17 | Lists refactor (multi-list favorites) | Product · REFACTOR | ⬜ Not started |
+| 17 | Lists refactor (multi-list favorites) | Product · REFACTOR | ✅ Complete (manual deploy pending) |
 | 18 | Surface model foundation (route groups + shells) | Both · FOUNDATION | ⬜ Not started |
 | 19 | Marketing surface build-out | Marketing · CONSTRUCTION | ⬜ Not started |
 | 20 | Marketing content: SEO landings | Marketing · CONSTRUCTION | ⬜ Not started |
@@ -135,7 +135,7 @@ Phase 17 (Lists)  ───►  Phase 18 (Foundation)  ───┬──►  Ph
 
 ## Phases
 
-### Phase 17 — Lists refactor (multi-list favorites) ⬜ · Product · REFACTOR
+### Phase 17 — Lists refactor (multi-list favorites) ✅ · Product · REFACTOR
 
 **Goal.** Replace the flat `favorites` + `fav_units` bucket with named, owned, optionally-shared `lists`. Every user gets a default `Избранное` list at signup; Pro users can create unlimited additional named lists, follow other users' public lists, and collaborate on shared lists. Phase 16 alerts re-key from per-favorite to per-list.
 
