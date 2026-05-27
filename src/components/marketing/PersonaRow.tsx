@@ -1,3 +1,5 @@
+'use client';
+
 import { type LucideIcon } from 'lucide-react';
 import { Building2, Compass, TrendingUp, Sparkles } from 'lucide-react';
 import { useTranslations } from '@/hooks/useTranslations';
