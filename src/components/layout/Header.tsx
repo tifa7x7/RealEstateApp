@@ -26,6 +26,12 @@ interface TabConfig {
 
 function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
+  if (href === '/search') {
+    // /search is the canonical product search route. Treat the
+    // legacy bare `?q=...` on `/` as also active to avoid flicker
+    // during the Phase 19 marketing/product split rollout.
+    return pathname === '/search' || pathname.startsWith('/search/');
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -70,7 +76,7 @@ function SearchFormDynamic({ placeholder }: { placeholder: string }) {
     const q = (data.get('q') ?? '').toString().trim();
     const params = new URLSearchParams();
     if (q) params.set('q', q);
-    router.push(params.toString() ? `/?${params.toString()}` : '/');
+    router.push(params.toString() ? `/search?${params.toString()}` : '/search');
   };
 
   return (
@@ -88,7 +94,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   const tabs: readonly TabConfig[] = [
-    { href: '/', label: t.tabs.search, icon: Search },
+    { href: '/search', label: t.tabs.search, icon: Search },
     { href: '/map', label: t.tabs.map, icon: MapIcon },
     { href: '/analytics', label: t.tabs.analytics, icon: BarChart3 },
     { href: '/calculator', label: t.tabs.calculator, icon: Calculator },

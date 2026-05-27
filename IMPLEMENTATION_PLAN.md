@@ -29,7 +29,7 @@
 | 16 | Retention loop: price alerts | ✅ Complete (code; edge function + email provider integration pending) |
 | 17 | Lists refactor (multi-list favorites) | ✅ Complete (code; manual deploy: apply 0004 + 0005 migrations and re-deploy edge function) |
 | 18 | Surface model foundation (route groups + shells) | ✅ Complete |
-| 19 | Marketing surface build-out | ⬜ Not started |
+| 19 | Marketing surface build-out | ✅ Complete |
 | 20 | Marketing content: SEO landings | ⬜ Not started |
 | 21 | Product polish from Solgt patterns | ⬜ Not started |
 | 22 | Far-future (parked: time-series + paste-a-link) | ⬜ Not started |
@@ -671,7 +671,7 @@ Already covered above. Verified passing.
 
 ---
 
-### Phase 19 — Marketing surface build-out ⬜
+### Phase 19 — Marketing surface build-out ✅
 
 **Goal:** Implement the marketing-surface UX patterns Solgt validated. Calculator-as-hero homepage swap, `/pricing` page with 3-tier table, the full `MarketingSlab` component library, and the marketing-copy sweep that turns the homepage into a conversion funnel.
 

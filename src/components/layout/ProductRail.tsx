@@ -35,7 +35,7 @@ export function ProductRail() {
   const pathname = usePathname();
 
   const items: readonly RailItem[] = [
-    { href: '/', labelKey: 'tabs.search', label: t.tabs.search, icon: Search },
+    { href: '/search', labelKey: 'tabs.search', label: t.tabs.search, icon: Search },
     { href: '/map', labelKey: 'tabs.map', label: t.tabs.map, icon: MapIcon },
     {
       href: '/analytics',

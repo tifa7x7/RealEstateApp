@@ -20,6 +20,9 @@ interface MobileTab {
 
 function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
+  if (href === '/search') {
+    return pathname === '/search' || pathname.startsWith('/search/');
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -28,7 +31,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   const tabs: readonly MobileTab[] = [
-    { href: '/', label: t.tabs.search, icon: Search },
+    { href: '/search', label: t.tabs.search, icon: Search },
     { href: '/map', label: t.tabs.map, icon: MapIcon },
     { href: '/analytics', label: t.tabs.analytics, icon: BarChart3 },
     { href: '/calculator', label: t.tabs.calculator, icon: Calculator },

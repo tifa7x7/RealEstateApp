@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -107,7 +108,15 @@ export function UpgradePrompt({
           ))}
         </ul>
 
-        <div className="flex gap-2 justify-end mt-2">
+        <div className="flex flex-wrap gap-2 justify-end items-center mt-2">
+          <Link
+            href="/pricing"
+            onClick={onClose}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[var(--text-dim)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:underline"
+          >
+            <span>Сравнить тарифы</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
           <Button variant="ghost" onClick={onClose}>
             Позже
           </Button>

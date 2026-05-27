@@ -103,7 +103,7 @@ src/components/product/              ❌ Directory does not exist.
 |---|---|---|---|
 | 17 | Lists refactor (multi-list favorites) | Product · REFACTOR | ✅ Complete (manual deploy pending) |
 | 18 | Surface model foundation (route groups + shells) | Both · FOUNDATION | ✅ Complete |
-| 19 | Marketing surface build-out | Marketing · CONSTRUCTION | ⬜ Not started |
+| 19 | Marketing surface build-out | Marketing · CONSTRUCTION | ✅ Complete |
 | 20 | Marketing content: SEO landings | Marketing · CONSTRUCTION | ⬜ Not started |
 | 21 | Product polish from Solgt patterns | Product · POLISH | ⬜ Not started |
 | 22 | Far-future (parked) | Both · PARKED | ⬜ Not started |
@@ -198,7 +198,7 @@ Phase 17 (Lists)  ───►  Phase 18 (Foundation)  ───┬──►  Ph
 
 ---
 
-### Phase 19 — Marketing surface build-out ⬜ · Marketing · CONSTRUCTION
+### Phase 19 — Marketing surface build-out ✅ · Marketing · CONSTRUCTION
 
 **Goal.** Build the marketing surface from scratch. Calculator-as-hero homepage swap, `/pricing` page, and the full slab library Phases 20+ depend on.
 

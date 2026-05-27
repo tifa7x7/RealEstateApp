@@ -289,6 +289,94 @@ export interface Translations {
     close: string;
     amenityCount: string;
   };
+  marketing: {
+    // Homepage hero (calculator-as-hero pattern)
+    heroEyebrow: string;
+    heroHeadline: string;
+    heroSubhead: string;
+    heroPrimaryCta: string;
+    heroSecondaryCta: string;
+    // Value-props row (3 cards under hero)
+    valuePropsTitle: string;
+    valuePropsSubtitle: string;
+    vp1Title: string;
+    vp1Body: string;
+    vp2Title: string;
+    vp2Body: string;
+    vp3Title: string;
+    vp3Body: string;
+    // Trust strip
+    trustEyebrow: string;
+    // Capability summary
+    capabilityTitle: string;
+    capabilitySubtitle: string;
+    // Persona row
+    personaTitle: string;
+    personaSubtitle: string;
+    personaBuyerName: string;
+    personaBuyerBody: string;
+    personaSearcherName: string;
+    personaSearcherBody: string;
+    personaInvestorName: string;
+    personaInvestorBody: string;
+    personaCuriousName: string;
+    personaCuriousBody: string;
+    // Stat strip on homepage
+    statProjects: string;
+    statUnits: string;
+    statCities: string;
+    statPriceRange: string;
+    // FAQ
+    faqTitle: string;
+    // Final CTA pair
+    ctaPairPrimary: string;
+    ctaPairSecondary: string;
+    // Pricing page
+    pricingTitle: string;
+    pricingSubtitle: string;
+    pricingMonthly: string;
+    pricingYearly: string;
+    pricingYearlySavings: string;
+    pricingRecommended: string;
+    pricingPerMonth: string;
+    pricingFreeTier: string;
+    pricingFreeAudience: string;
+    pricingFreeCta: string;
+    pricingProMonthlyTier: string;
+    pricingProYearlyTier: string;
+    pricingProAudience: string;
+    pricingProCta: string;
+    pricingFreeFeature1: string;
+    pricingFreeFeature2: string;
+    pricingFreeFeature3: string;
+    pricingFreeFeature4: string;
+    pricingProFeature1: string;
+    pricingProFeature2: string;
+    pricingProFeature3: string;
+    pricingProFeature4: string;
+    pricingProFeature5: string;
+    pricingProFeature6: string;
+    pricingProFeature7: string;
+    pricingProFeature8: string;
+    pricingFromUpgradePrompt: string;
+    // Feature blocks (homepage slabs explaining each surface)
+    featureCalcEyebrow: string;
+    featureCalcHeadline: string;
+    featureCalcBody: string;
+    featureCalcCta: string;
+    featureMapEyebrow: string;
+    featureMapHeadline: string;
+    featureMapBody: string;
+    featureMapCta: string;
+    featureAnalyticsEyebrow: string;
+    featureAnalyticsHeadline: string;
+    featureAnalyticsBody: string;
+    featureAnalyticsCta: string;
+    featureListsEyebrow: string;
+    featureListsHeadline: string;
+    featureListsBody: string;
+    featureListsCta: string;
+  };
   lists: {
     tabLabel: string;
     indexTitle: string;
