@@ -28,7 +28,7 @@
 | 15 | Real Supabase + billing + Pro tier completion | ✅ Complete (code; provider integration pending) |
 | 16 | Retention loop: price alerts | ✅ Complete (code; edge function + email provider integration pending) |
 | 17 | Lists refactor (multi-list favorites) | ✅ Complete (code; manual deploy: apply 0004 + 0005 migrations and re-deploy edge function) |
-| 18 | Surface model foundation (route groups + shells) | ⬜ Not started |
+| 18 | Surface model foundation (route groups + shells) | ✅ Complete |
 | 19 | Marketing surface build-out | ⬜ Not started |
 | 20 | Marketing content: SEO landings | ⬜ Not started |
 | 21 | Product polish from Solgt patterns | ⬜ Not started |
@@ -644,7 +644,7 @@ Already covered above. Verified passing.
 
 ---
 
-### Phase 18 — Surface model foundation (route groups + shells) ⬜
+### Phase 18 — Surface model foundation (route groups + shells) ✅
 
 **Goal:** Mechanically reshape the codebase to match the Surface model from [CLAUDE.md](CLAUDE.md#surface-model). Route groups `app/(marketing)/` and `app/(product)/`, `MarketingShell` + `ProductShell` layout components, theme-by-surface enforcement, and the `components/marketing/` + `components/product/` directory split. No new features — this phase is the architectural foundation that Phases 19, 20, 21 build on.
 

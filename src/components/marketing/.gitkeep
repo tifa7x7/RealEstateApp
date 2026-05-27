@@ -1,0 +1,10 @@
+Phase 19 will fill this directory with:
+  - MarketingSlab.tsx
+  - MarketingCTAPair.tsx
+  - PricingTable.tsx
+  - PersonaRow.tsx
+  - FAQAccordion.tsx
+  - StatStrip.tsx
+  - TestimonialCarousel.tsx
+
+For now this file exists only so git tracks the directory.

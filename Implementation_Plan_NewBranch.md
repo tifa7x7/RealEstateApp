@@ -102,7 +102,7 @@ src/components/product/              ❌ Directory does not exist.
 | Phase | Title | Classification | Status |
 |---|---|---|---|
 | 17 | Lists refactor (multi-list favorites) | Product · REFACTOR | ✅ Complete (manual deploy pending) |
-| 18 | Surface model foundation (route groups + shells) | Both · FOUNDATION | ⬜ Not started |
+| 18 | Surface model foundation (route groups + shells) | Both · FOUNDATION | ✅ Complete |
 | 19 | Marketing surface build-out | Marketing · CONSTRUCTION | ⬜ Not started |
 | 20 | Marketing content: SEO landings | Marketing · CONSTRUCTION | ⬜ Not started |
 | 21 | Product polish from Solgt patterns | Product · POLISH | ⬜ Not started |
@@ -161,7 +161,7 @@ Phase 17 (Lists)  ───►  Phase 18 (Foundation)  ───┬──►  Ph
 
 ---
 
-### Phase 18 — Surface model foundation (route groups + shells) ⬜ · Both · FOUNDATION
+### Phase 18 — Surface model foundation (route groups + shells) ✅ · Both · FOUNDATION
 
 **Goal.** Mechanically reshape the codebase to match the Surface model from [CLAUDE.md](CLAUDE.md#surface-model). Route groups `app/(marketing)/` and `app/(product)/`, `MarketingShell` + `ProductShell` layout components, theme-by-surface enforcement, and the `components/marketing/` + `components/product/` directory split.
 

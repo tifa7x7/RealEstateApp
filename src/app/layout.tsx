@@ -2,12 +2,8 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { DM_Sans, Playfair_Display } from 'next/font/google';
 
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { LocaleHtmlLang } from '@/components/layout/LocaleHtmlLang';
-import { MobileNav } from '@/components/layout/MobileNav';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
-import { CompareLauncher } from '@/components/projects/CompareLauncher';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { SupabaseSync } from '@/components/providers/SupabaseSync';
 import { ToastProvider } from '@/components/providers/ToastProvider';
@@ -37,6 +33,19 @@ export const metadata: Metadata = {
 
 const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
+/**
+ * Phase 18 — root layout is now neutral: providers, fonts, theme
+ * bootstrap script, and the skip link only. Surface chrome (Header,
+ * Footer, MobileNav, CompareLauncher) lives in `MarketingShell` /
+ * `ProductShell`, mounted by the route-group layouts
+ * (`app/(marketing)/layout.tsx` and `app/(product)/layout.tsx`).
+ *
+ * The theme bootstrap script sets `data-theme` on `<html>` before paint.
+ * The `data-surface` attribute is set client-side by whichever shell
+ * mounts first (see MarketingShell + ProductShell useEffects). Marketing
+ * surfaces force light via the CSS selector in `globals.css` regardless
+ * of the user's saved `data-theme`.
+ */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
@@ -59,13 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ToastProvider>
               <LocaleHtmlLang />
               <SupabaseSync />
-              <Header />
-              <main id="main-content" className="flex-1 pb-20 md:pb-0">
-                {children}
-              </main>
-              <Footer />
-              <MobileNav />
-              <CompareLauncher />
+              {children}
             </ToastProvider>
           </QueryProvider>
         </ThemeProvider>

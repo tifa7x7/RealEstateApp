@@ -47,7 +47,8 @@
   color-scheme: dark;
 }
 
-:root[data-theme='light'] {
+:root[data-theme='light'],
+:root[data-surface='marketing'] {
   --bg: #ffffff;
   --bg-card: #f7f9fc;
   --bg-elevated: #eef2f7;
@@ -88,6 +89,14 @@
 
   color-scheme: light;
 }
+
+/* Phase 18 — Surface model.
+   Marketing surfaces (data-surface='marketing') force the light palette
+   above regardless of the user's `data-theme` preference, while product
+   surfaces (data-surface='product') honor the user's preference (dark by
+   default). The selector specificity is intentional: marketing override
+   wins over a user's saved dark preference; product surface is a no-op
+   that exists for symmetry + future surface-specific tweaks. */
 
 * {
   box-sizing: border-box;
