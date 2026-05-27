@@ -137,47 +137,135 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
         Relationships: [];
       };
-      favorites: {
+      lists: {
         Row: {
-          user_id: string;
-          project_id: number;
+          id: string;
+          owner_user_id: string;
+          name: string;
+          visibility: 'private' | 'unlisted' | 'public';
+          is_default: boolean;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
-          user_id: string;
-          project_id: number;
+          id?: string;
+          owner_user_id: string;
+          name: string;
+          visibility?: 'private' | 'unlisted' | 'public';
+          is_default?: boolean;
           created_at?: string;
+          updated_at?: string;
         };
-        Update: Partial<Database['public']['Tables']['favorites']['Insert']>;
+        Update: Partial<Database['public']['Tables']['lists']['Insert']>;
+        Relationships: [];
+      };
+      list_items: {
+        Row: {
+          list_id: string;
+          project_id: number;
+          unit_id: string | null;
+          position: number;
+          note: string | null;
+          added_at: string;
+        };
+        Insert: {
+          list_id: string;
+          project_id: number;
+          unit_id?: string | null;
+          position?: number;
+          note?: string | null;
+          added_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['list_items']['Insert']>;
         Relationships: [
           {
-            foreignKeyName: 'favorites_project_id_fkey';
+            foreignKeyName: 'list_items_list_id_fkey';
+            columns: ['list_id'];
+            referencedRelation: 'lists';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'list_items_project_id_fkey';
             columns: ['project_id'];
             referencedRelation: 'projects';
             referencedColumns: ['id'];
           },
-        ];
-      };
-      fav_units: {
-        Row: {
-          user_id: string;
-          project_id: number;
-          unit_id: string;
-          created_at: string;
-        };
-        Insert: {
-          user_id: string;
-          project_id: number;
-          unit_id: string;
-          created_at?: string;
-        };
-        Update: Partial<Database['public']['Tables']['fav_units']['Insert']>;
-        Relationships: [
           {
-            foreignKeyName: 'fav_units_project_id_unit_id_fkey';
+            foreignKeyName: 'list_items_project_id_unit_id_fkey';
             columns: ['project_id', 'unit_id'];
             referencedRelation: 'units';
             referencedColumns: ['project_id', 'id'];
+          },
+        ];
+      };
+      list_followers: {
+        Row: {
+          list_id: string;
+          follower_user_id: string;
+          alerts_enabled: boolean;
+          created_at: string;
+        };
+        Insert: {
+          list_id: string;
+          follower_user_id: string;
+          alerts_enabled?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['list_followers']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'list_followers_list_id_fkey';
+            columns: ['list_id'];
+            referencedRelation: 'lists';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      list_collaborators: {
+        Row: {
+          list_id: string;
+          user_id: string;
+          role: 'editor' | 'viewer';
+          created_at: string;
+        };
+        Insert: {
+          list_id: string;
+          user_id: string;
+          role: 'editor' | 'viewer';
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['list_collaborators']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'list_collaborators_list_id_fkey';
+            columns: ['list_id'];
+            referencedRelation: 'lists';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      list_comments: {
+        Row: {
+          id: string;
+          list_id: string;
+          author_user_id: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          list_id: string;
+          author_user_id: string;
+          body: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['list_comments']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'list_comments_list_id_fkey';
+            columns: ['list_id'];
+            referencedRelation: 'lists';
+            referencedColumns: ['id'];
           },
         ];
       };
@@ -262,8 +350,7 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
-          project_id: number;
-          unit_id: string | null;
+          list_id: string;
           threshold_pct: number;
           channel: 'email';
           active: boolean;
@@ -275,8 +362,7 @@ export type Database = {
         Insert: {
           id?: string;
           user_id: string;
-          project_id: number;
-          unit_id?: string | null;
+          list_id: string;
           threshold_pct?: number;
           channel?: 'email';
           active?: boolean;
@@ -288,9 +374,9 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['price_alerts']['Insert']>;
         Relationships: [
           {
-            foreignKeyName: 'price_alerts_project_id_fkey';
-            columns: ['project_id'];
-            referencedRelation: 'projects';
+            foreignKeyName: 'price_alerts_list_id_fkey';
+            columns: ['list_id'];
+            referencedRelation: 'lists';
             referencedColumns: ['id'];
           },
         ];
@@ -308,12 +394,13 @@ export type Database = {
         Args: Record<string, never>;
         Returns: number;
       };
-      /** Phase 16 — list alert rows whose latest snapshot crossed the threshold. */
+      /** Phase 17 — list-scoped: pending alert rows whose latest snapshot crossed threshold. */
       compute_pending_alerts: {
         Args: Record<string, never>;
         Returns: {
           alert_id: string;
           user_id: string;
+          list_id: string;
           project_id: number;
           unit_id: string | null;
           previous_price: number;

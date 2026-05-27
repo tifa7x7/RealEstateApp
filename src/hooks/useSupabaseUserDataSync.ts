@@ -4,9 +4,11 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchAlerts } from '@/lib/api/alerts';
 import {
-  bulkImportFavorites,
-  fetchFavorites,
-} from '@/lib/api/favorites';
+  bulkImportToDefaultList,
+  fetchDefaultListId,
+  fetchListItems,
+  fetchListsForUser,
+} from '@/lib/api/lists';
 import { fetchPortfolio, bulkImportPortfolio } from '@/lib/api/portfolio';
 import { fetchProfile } from '@/lib/api/profile';
 import { bulkImportSavedCalcs, fetchSavedCalcs } from '@/lib/api/saved-calcs';
@@ -38,13 +40,14 @@ function markMigrated(userId: string): void {
  * authenticated, performs:
  *
  *   1. A one-time per-user/per-device import of localStorage favorites,
- *      saved calculations, and portfolio rows into Supabase (only on the
- *      first sign-in on this device — re-signs are no-ops).
+ *      saved calculations, and portfolio rows into Supabase. Phase 17:
+ *      favorites + fav_units now flow into the user's default `Избранное`
+ *      list (`list_items`).
  *   2. A hydration of the Zustand store from the authoritative Supabase
  *      state, replacing whatever was loaded from localStorage.
  *
  * Subsequent mutations are mirrored to Supabase by the individual hooks
- * (useFavorites, useSavedCalcs, usePortfolio).
+ * (useFavorites, useLists, useSavedCalcs, usePortfolio, useAlerts).
  */
 export function useSupabaseUserDataSync(): void {
   const { supabaseEnabled, user, loading } = useAuth();
@@ -63,12 +66,27 @@ export function useSupabaseUserDataSync(): void {
 
     async function run() {
       try {
-        // Step 1: one-time localStorage → Supabase import.
+        // Step 1: resolve / create the default list, then run one-time
+        // localStorage → Supabase import targeted at it.
+        const defaultListId = await fetchDefaultListId(client!, userId);
+        if (!defaultListId) {
+          // The handle_new_user trigger should have created this; if it
+          // didn't (e.g., signup predates the Phase-17 trigger update),
+          // there's nothing more to do until next sign-in. Bail safely.
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              '[useSupabaseUserDataSync] no default list for user; ' +
+                'skipping favorites hydration',
+            );
+          }
+        }
+
         if (!hasMigrated(userId)) {
-          if (state.favorites.length > 0 || state.favUnits.length > 0) {
-            await bulkImportFavorites(
+          if (defaultListId &&
+              (state.favorites.length > 0 || state.favUnits.length > 0)) {
+            await bulkImportToDefaultList(
               client!,
-              userId,
+              defaultListId,
               state.favorites,
               state.favUnits,
             );
@@ -83,22 +101,36 @@ export function useSupabaseUserDataSync(): void {
         }
 
         // Step 2: hydrate store from Supabase (source of truth).
-        const [favs, calcs, portfolio, profile, alerts] = await Promise.all([
-          fetchFavorites(client!),
-          fetchSavedCalcs(client!),
-          fetchPortfolio(client!),
-          fetchProfile(client!, userId),
-          fetchAlerts(client!),
-        ]);
+        const [defaultItems, allLists, calcs, portfolio, profile, alerts] =
+          await Promise.all([
+            defaultListId
+              ? fetchListItems(client!, defaultListId)
+              : Promise.resolve([]),
+            fetchListsForUser(client!, userId),
+            fetchSavedCalcs(client!),
+            fetchPortfolio(client!),
+            fetchProfile(client!, userId),
+            fetchAlerts(client!),
+          ]);
+
+        // Project favorites = default-list items where unit_id is null.
+        // Unit favorites = items where unit_id is set, key shape preserved
+        // ("${projectId}__${unitId}") for backwards-compat with consumers.
+        const favorites = defaultItems
+          .filter((i) => i.unitId === null)
+          .map((i) => i.projectId);
+        const favUnits = defaultItems
+          .filter((i) => i.unitId !== null)
+          .map((i) => `${i.projectId}__${i.unitId}`);
+
         useAppStore.setState({
-          favorites: favs.projectIds,
-          favUnits: favs.favUnitKeys,
+          favorites,
+          favUnits,
           savedCalcs: calcs,
           rentalProperties: portfolio,
           priceAlerts: alerts,
-          // Server-side tier is canonical (Phase 15). When the profile fetch
-          // returned data, write it through; otherwise leave the store's
-          // previous value (which defaults to 'free' for fresh sessions).
+          defaultListId: defaultListId ?? null,
+          userLists: allLists,
           ...(profile ? { currentTier: profile.tier } : {}),
         });
       } catch (err) {

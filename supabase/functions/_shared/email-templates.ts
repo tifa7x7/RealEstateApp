@@ -4,6 +4,8 @@
 // free so the edge function bundle stays small.
 
 export interface AlertEmailRow {
+  /** Name of the list this alert is configured on (Phase 17). */
+  listName: string;
   projectName: string;
   city: string;
   unitId: string | null;
@@ -27,44 +29,44 @@ interface Copy {
 
 const RU: Copy = {
   subjectSingle: (project, pct) => `Цена на ${project} изменилась на ${pct}%`,
-  subjectDigest: (count) => `${count} обновлений цен по вашему избранному`,
+  subjectDigest: (count) => `${count} обновлений цен по вашим спискам`,
   greeting: 'Здравствуйте,',
   intro: (tier) =>
     tier === 'pro'
-      ? 'По вашим уведомлениям цены изменились:'
-      : 'Еженедельная сводка изменений цен по вашему избранному:',
+      ? 'По вашим спискам цены изменились:'
+      : 'Еженедельная сводка изменений цен по вашим спискам:',
   rowLine: (row) => {
     const direction = row.deltaPct < 0 ? 'снизилась' : 'выросла';
     const pct = Math.abs(row.deltaPct).toFixed(1);
     const unit = row.unitId ? ` · кв. ${row.unitId}` : '';
     const oldP = formatRub(row.previousPrice);
     const newP = formatRub(row.currentPrice);
-    return `<strong>${escapeHtml(row.projectName)}</strong>${escapeHtml(unit)} (${escapeHtml(row.city)}) — цена ${direction} на ${pct}%: ${oldP} → <strong>${newP}</strong>`;
+    return `<em>${escapeHtml(row.listName)}</em> — <strong>${escapeHtml(row.projectName)}</strong>${escapeHtml(unit)} (${escapeHtml(row.city)}) — цена ${direction} на ${pct}%: ${oldP} → <strong>${newP}</strong>`;
   },
   cta: 'Посмотреть объект',
   unsubscribe: 'Отписаться от этого уведомления',
-  footer: 'Вы получили это письмо, потому что включили уведомления о ценах. RealEstateApp.',
+  footer: 'Вы получили это письмо, потому что включили уведомления на ваш список. RealEstateApp.',
 };
 
 const EN: Copy = {
   subjectSingle: (project, pct) => `${project} price changed by ${pct}%`,
-  subjectDigest: (count) => `${count} price updates on your favorites`,
+  subjectDigest: (count) => `${count} price updates on your lists`,
   greeting: 'Hello,',
   intro: (tier) =>
     tier === 'pro'
-      ? 'Prices have changed on units you watch:'
-      : 'Weekly digest of price changes on your favorites:',
+      ? 'Prices have changed on lists you watch:'
+      : 'Weekly digest of price changes on your lists:',
   rowLine: (row) => {
     const direction = row.deltaPct < 0 ? 'dropped' : 'rose';
     const pct = Math.abs(row.deltaPct).toFixed(1);
     const unit = row.unitId ? ` · unit ${row.unitId}` : '';
     const oldP = formatRub(row.previousPrice);
     const newP = formatRub(row.currentPrice);
-    return `<strong>${escapeHtml(row.projectName)}</strong>${escapeHtml(unit)} (${escapeHtml(row.city)}) — price ${direction} ${pct}%: ${oldP} → <strong>${newP}</strong>`;
+    return `<em>${escapeHtml(row.listName)}</em> — <strong>${escapeHtml(row.projectName)}</strong>${escapeHtml(unit)} (${escapeHtml(row.city)}) — price ${direction} ${pct}%: ${oldP} → <strong>${newP}</strong>`;
   },
   cta: 'View property',
   unsubscribe: 'Unsubscribe from this alert',
-  footer: 'You received this because you opted into price alerts. RealEstateApp.',
+  footer: 'You received this because you opted into list price alerts. RealEstateApp.',
 };
 
 function formatRub(amount: number): string {

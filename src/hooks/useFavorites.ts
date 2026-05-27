@@ -4,12 +4,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PROJECTS } from '@/data/projects';
-import {
-  addFavorite,
-  addFavUnit,
-  removeFavorite,
-  removeFavUnit,
-} from '@/lib/api/favorites';
+import { addItem, removeItem } from '@/lib/api/lists';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Project, Unit } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,28 +41,27 @@ function logSyncError(err: unknown): void {
 }
 
 /**
- * Wraps the Zustand `favorites` + `favUnits` slices with tier-aware limits
- * and Supabase write-through (Phase 8 contract). Adding past the free-tier
- * cap emits an info toast — callers don't have to handle the result unless
- * they want to (e.g., open a richer UpgradePrompt).
+ * Phase 17 — `useFavorites` is now a backwards-compat shim over the
+ * **default list** (`Избранное`). The public API is unchanged; the server
+ * write goes through `addItem`/`removeItem` on `list_items` instead of the
+ * old `favorites`/`fav_units` tables.
+ *
+ * Components that want multi-list capabilities should use `useLists`
+ * directly. This hook stays simple for the "I just want to star things"
+ * use case that's the majority of interactions.
  */
 export function useFavorites(): UseFavoritesResult {
   const favorites = useAppStore((s) => s.favorites);
   const favUnits = useAppStore((s) => s.favUnits);
   const toggleFavoriteStore = useAppStore((s) => s.toggleFavorite);
   const toggleFavUnitStore = useAppStore((s) => s.toggleFavUnit);
+  const defaultListId = useAppStore((s) => s.defaultListId);
   const { supabaseEnabled, user } = useAuth();
   const { isPro } = usePaywall('unlimited-favorites');
   const toast = useToast();
 
   const limit = isPro ? Number.POSITIVE_INFINITY : FAVORITES_LIMIT_FREE;
 
-  // Resolve favorited project ids against the React Query cache populated
-  // by `useProjects`. Falls through to the bundled seed when the cache is
-  // empty (initial paint before useProjects has fired). When Supabase is
-  // live, the cache holds DB-sourced projects; when not, the cache equals
-  // the seed — same lookup works in both cases. Phase 15 carry-over from
-  // Phase 8: stops `useFavorites` from reading PROJECTS as runtime truth.
   const { data: allProjects = PROJECTS } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => PROJECTS as Project[],
@@ -101,7 +95,6 @@ export function useFavorites(): UseFavoritesResult {
   const toggleFavorite = (id: number): FavoriteToggleResult => {
     const wasFav = favorites.includes(id);
 
-    // Removing is always allowed — cap only applies to adding.
     if (!wasFav && favorites.length >= limit) {
       toast.info(
         `Лимит ${FAVORITES_LIMIT_FREE} избранных на Free. Pro снимает ограничение.`,
@@ -110,22 +103,26 @@ export function useFavorites(): UseFavoritesResult {
     }
 
     toggleFavoriteStore(id);
-    if (!supabaseEnabled || !user) return { ok: true };
+    if (!supabaseEnabled || !user || !defaultListId) return { ok: true };
     const client = getSupabaseBrowserClient();
     if (!client) return { ok: true };
-    const op = wasFav ? removeFavorite : addFavorite;
-    void op(client, user.id, id).catch(logSyncError);
+    const op = wasFav
+      ? removeItem(client, defaultListId, id, null)
+      : addItem(client, defaultListId, { projectId: id });
+    void op.catch(logSyncError);
     return { ok: true };
   };
 
   const toggleFavUnit = (projectId: number, unitId: string) => {
     const wasFav = favUnits.includes(`${projectId}__${unitId}`);
     toggleFavUnitStore(projectId, unitId);
-    if (!supabaseEnabled || !user) return;
+    if (!supabaseEnabled || !user || !defaultListId) return;
     const client = getSupabaseBrowserClient();
     if (!client) return;
-    const op = wasFav ? removeFavUnit : addFavUnit;
-    void op(client, user.id, projectId, unitId).catch(logSyncError);
+    const op = wasFav
+      ? removeItem(client, defaultListId, projectId, unitId)
+      : addItem(client, defaultListId, { projectId, unitId });
+    void op.catch(logSyncError);
   };
 
   const clear = () => {

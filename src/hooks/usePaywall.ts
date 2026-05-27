@@ -12,7 +12,8 @@ export type ProFeature =
   | 'unlimited-favorites'
   | 'exports'
   | 'compare-multi'
-  | 'realtime-alerts';
+  | 'realtime-alerts'
+  | 'multi-list';
 
 const PRO_FEATURES: ReadonlySet<string> = new Set<ProFeature>([
   'multi-object',
@@ -24,6 +25,7 @@ const PRO_FEATURES: ReadonlySet<string> = new Set<ProFeature>([
   'exports',
   'compare-multi',
   'realtime-alerts',
+  'multi-list',
 ]);
 
 /** Soft caps surfaced by `useCompare`. Free tier sees the 'compare-multi' Pro feature when trying to exceed. */

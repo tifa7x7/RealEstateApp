@@ -1,16 +1,20 @@
 /**
- * Phase 16 — price-alert CRUD. All functions assume the supplied client
- * carries a valid auth session; RLS on `price_alerts` enforces per-user
- * scoping. The unsubscribe path uses the service-role key from a server
- * route (not these functions).
+ * Phase 17 — price-alert CRUD, list-scoped.
+ *
+ * An alert is a `(user_id, list_id, threshold_pct)` row. When any item in
+ * the list moves price by `>= threshold_pct`, the dispatch edge function
+ * emails the user. There's at most one alert per (user, list) — toggling
+ * the alert is equivalent to insert-or-delete on that pair.
+ *
+ * The unsubscribe path uses the service-role key from a server route
+ * (not these functions).
  */
 import type { AppSupabaseClient } from '@/lib/supabase/client';
 
 export interface PriceAlert {
   id: string;
-  projectId: number;
-  /** null = whole project (any unit price drop triggers). */
-  unitId: string | null;
+  /** The list this alert watches. Triggers on any item in that list. */
+  listId: string;
   /** Trigger when |delta_pct| >= thresholdPct. */
   thresholdPct: number;
   active: boolean;
@@ -20,15 +24,13 @@ export interface PriceAlert {
 }
 
 export interface CreateAlertInput {
-  projectId: number;
-  unitId?: string | null;
+  listId: string;
   thresholdPct?: number;
 }
 
 type AlertRow = {
   id: string;
-  project_id: number;
-  unit_id: string | null;
+  list_id: string;
   threshold_pct: number;
   active: boolean;
   last_notified_at: string | null;
@@ -39,8 +41,7 @@ type AlertRow = {
 function toAlert(row: AlertRow): PriceAlert {
   return {
     id: row.id,
-    projectId: row.project_id,
-    unitId: row.unit_id,
+    listId: row.list_id,
     thresholdPct: Number(row.threshold_pct),
     active: row.active,
     lastNotifiedAt: row.last_notified_at,
@@ -53,7 +54,7 @@ export async function fetchAlerts(client: AppSupabaseClient): Promise<PriceAlert
   const { data, error } = await client
     .from('price_alerts')
     .select(
-      'id, project_id, unit_id, threshold_pct, active, last_notified_at, unsubscribe_token, created_at',
+      'id, list_id, threshold_pct, active, last_notified_at, unsubscribe_token, created_at',
     )
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -70,20 +71,14 @@ export async function createAlert(
     .upsert(
       {
         user_id: userId,
-        project_id: input.projectId,
-        unit_id: input.unitId ?? null,
+        list_id: input.listId,
         threshold_pct: input.thresholdPct ?? 5,
         active: true,
       },
-      {
-        // Partial-unique on (user_id, project_id, unit_id) — but the
-        // unit_id IS NULL branch needs onConflict naming the columns.
-        // Supabase translates this to ON CONFLICT (...) DO UPDATE.
-        onConflict: input.unitId ? 'user_id,project_id,unit_id' : 'user_id,project_id',
-      },
+      { onConflict: 'user_id,list_id' },
     )
     .select(
-      'id, project_id, unit_id, threshold_pct, active, last_notified_at, unsubscribe_token, created_at',
+      'id, list_id, threshold_pct, active, last_notified_at, unsubscribe_token, created_at',
     )
     .single();
   if (error) throw error;
@@ -112,46 +107,25 @@ export async function deleteAlert(
 }
 
 /**
- * Bulk-create alerts for a list of (projectId, unitId?) targets. Used by the
- * onboarding nudge to enable alerts on every favorite in one tap. Idempotent
- * thanks to the unique partial indexes.
+ * Bulk-create alerts on a set of list ids. Used by the onboarding nudge
+ * (now: "enable alerts on every list you own"). Idempotent via the unique
+ * (user_id, list_id) constraint.
  */
 export async function bulkCreateAlerts(
   client: AppSupabaseClient,
   userId: string,
-  targets: CreateAlertInput[],
+  listIds: string[],
+  thresholdPct = 5,
 ): Promise<void> {
-  if (targets.length === 0) return;
-  // Two passes because the partial unique indexes use different conflict
-  // targets (one for unit-scoped, one for project-scoped).
-  const unitScoped = targets.filter((t) => t.unitId);
-  const projectScoped = targets.filter((t) => !t.unitId);
-
-  if (unitScoped.length > 0) {
-    const { error } = await client.from('price_alerts').upsert(
-      unitScoped.map((t) => ({
-        user_id: userId,
-        project_id: t.projectId,
-        unit_id: t.unitId!,
-        threshold_pct: t.thresholdPct ?? 5,
-        active: true,
-      })),
-      { onConflict: 'user_id,project_id,unit_id', ignoreDuplicates: true },
-    );
-    if (error) throw error;
-  }
-
-  if (projectScoped.length > 0) {
-    const { error } = await client.from('price_alerts').upsert(
-      projectScoped.map((t) => ({
-        user_id: userId,
-        project_id: t.projectId,
-        unit_id: null,
-        threshold_pct: t.thresholdPct ?? 5,
-        active: true,
-      })),
-      { onConflict: 'user_id,project_id', ignoreDuplicates: true },
-    );
-    if (error) throw error;
-  }
+  if (listIds.length === 0) return;
+  const { error } = await client.from('price_alerts').upsert(
+    listIds.map((listId) => ({
+      user_id: userId,
+      list_id: listId,
+      threshold_pct: thresholdPct,
+      active: true,
+    })),
+    { onConflict: 'user_id,list_id', ignoreDuplicates: true },
+  );
+  if (error) throw error;
 }

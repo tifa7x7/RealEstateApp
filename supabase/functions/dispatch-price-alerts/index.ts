@@ -1,4 +1,10 @@
-// Phase 16 — Daily snapshot + alert dispatch.
+// Phase 16 + Phase 17 — Daily snapshot + alert dispatch.
+//
+// Phase 17 changed `compute_pending_alerts` to return list-scoped rows:
+// each row now carries a `list_id` in addition to the per-unit price data,
+// and a user can have multiple list-scoped alerts (one per list they care
+// about). Grouping for the email digest is still per-user; the email body
+// names the affected list so recipients know which one fired.
 //
 // Deno-style Supabase Edge Function. Deploy with:
 //   supabase functions deploy dispatch-price-alerts --no-verify-jwt
@@ -36,6 +42,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 interface PendingAlert {
   alert_id: string;
   user_id: string;
+  list_id: string;
   project_id: number;
   unit_id: string | null;
   previous_price: number;
@@ -133,7 +140,7 @@ Deno.serve(async () => {
     if (u.email) emailById.set(u.id, u.email);
   }
 
-  // 5. Project + unit lookups (so the email can name what changed).
+  // 5. Project + list lookups (so the email can name what changed).
   const projectIds = [...new Set(rows.map((r) => r.project_id))];
   const { data: projects } = await admin
     .from('projects')
@@ -141,6 +148,15 @@ Deno.serve(async () => {
     .in('id', projectIds);
   const projectById = new Map<number, { id: number; name: string; city: string }>(
     (projects ?? []).map((p) => [p.id, p]),
+  );
+
+  const listIds = [...new Set(rows.map((r) => r.list_id))];
+  const { data: listsData } = await admin
+    .from('lists')
+    .select('id, name')
+    .in('id', listIds);
+  const listNameById = new Map<string, string>(
+    (listsData ?? []).map((l: { id: string; name: string }) => [l.id, l.name]),
   );
 
   let sent = 0;
@@ -163,6 +179,7 @@ Deno.serve(async () => {
     }
 
     const items: AlertEmailRow[] = eligible.map((r) => ({
+      listName: listNameById.get(r.list_id) ?? 'Избранное',
       projectName: projectById.get(r.project_id)?.name ?? `ЖК #${r.project_id}`,
       city: projectById.get(r.project_id)?.city ?? '',
       unitId: r.unit_id,

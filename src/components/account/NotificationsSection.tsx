@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
 import { useAlerts } from '@/hooks/useAlerts';
+import { useLists } from '@/hooks/useLists';
 import { useTranslations } from '@/hooks/useTranslations';
 import { ALERTS_DEFAULT_THRESHOLD_PCT } from '@/hooks/usePaywall';
 
@@ -19,9 +20,11 @@ const THRESHOLDS = [3, 5, 10, 15] as const;
 export function NotificationsSection() {
   const t = useTranslations();
   const { alerts, isPro, setThreshold, setActive, remove } = useAlerts();
+  const { lists } = useLists();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const activeCount = alerts.filter((a) => a.active).length;
+  const listNameById = new Map(lists.map((l) => [l.id, l.name]));
 
   return (
     <Card>
@@ -54,9 +57,7 @@ export function NotificationsSection() {
             >
               <div className="flex flex-col min-w-0">
                 <span className="text-[13px] font-medium">
-                  {a.unitId
-                    ? `${t.alerts.unit} ${a.unitId} · ЖК #${a.projectId}`
-                    : `${t.alerts.wholeProject} · ЖК #${a.projectId}`}
+                  {listNameById.get(a.listId) ?? `${t.alerts.unit} · ${a.listId.slice(0, 8)}`}
                 </span>
                 <span className="text-[11px] text-[var(--text-dim)] tabular-nums">
                   {a.lastNotifiedAt

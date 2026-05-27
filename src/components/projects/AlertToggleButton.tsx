@@ -2,8 +2,10 @@
 
 import { Bell, BellOff } from 'lucide-react';
 import { useAlerts } from '@/hooks/useAlerts';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useTranslations } from '@/hooks/useTranslations';
 import { ALERTS_DEFAULT_THRESHOLD_PCT } from '@/hooks/usePaywall';
+import { useAppStore } from '@/store/app-store';
 
 export interface AlertToggleButtonProps {
   projectId: number;
@@ -14,9 +16,17 @@ export interface AlertToggleButtonProps {
 }
 
 /**
- * Phase 16 — one-tap toggle for a price alert on a project or unit. Reuses
- * `useAlerts.toggle` so tier-aware limits and toast feedback live in one
- * place. Pressed state mirrors `hasAlert(scope)`.
+ * Phase 17 — alerts are now per-LIST, not per-item. This button keeps the
+ * per-item entry point users learned in Phase 16 by:
+ *
+ *   1. Adding the item to the user's default `Избранное` list (idempotent).
+ *   2. Toggling whether an alert exists on that list.
+ *
+ * Pressed state = "an alert exists on my default list AND this item is in
+ * it." The granularity is at the list level — turning on alerts for one
+ * item turns on alerts for every item in `Избранное`. Phase 17 Session 2
+ * will surface multi-list management properly; this preserves the muscle
+ * memory until then.
  */
 export function AlertToggleButton({
   projectId,
@@ -25,8 +35,13 @@ export function AlertToggleButton({
 }: AlertToggleButtonProps) {
   const t = useTranslations();
   const { hasAlert, toggle } = useAlerts();
+  const { toggleFavorite, toggleFavUnit, isFavorite, isFavUnit } = useFavorites();
+  const defaultListId = useAppStore((s) => s.defaultListId);
 
-  const on = hasAlert(projectId, unitId);
+  const inDefault = unitId ? isFavUnit(projectId, unitId) : isFavorite(projectId);
+  const alertOn = defaultListId ? hasAlert(defaultListId) : false;
+  const on = inDefault && alertOn;
+
   const label = on
     ? unitId
       ? t.alerts.removeForUnit
@@ -36,11 +51,14 @@ export function AlertToggleButton({
       : t.alerts.addForProject;
 
   const handleClick = () => {
-    void toggle({
-      projectId,
-      unitId,
-      thresholdPct: ALERTS_DEFAULT_THRESHOLD_PCT,
-    });
+    if (!defaultListId) return;
+    // Ensure the item is in Избранное before toggling alerts. If we're
+    // turning alerts OFF the item stays put — only the alert flips.
+    if (!inDefault) {
+      if (unitId) toggleFavUnit(projectId, unitId);
+      else toggleFavorite(projectId);
+    }
+    void toggle({ listId: defaultListId, thresholdPct: ALERTS_DEFAULT_THRESHOLD_PCT });
   };
 
   const className =

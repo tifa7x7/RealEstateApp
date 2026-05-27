@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { PROJECTS } from '@/data/projects';
 import { defaultCalcObject } from '@/lib/calculator';
 import type { PriceAlert } from '@/lib/api/alerts';
+import type { List } from '@/lib/api/lists';
 import type {
   CalcObject,
   Locale,
@@ -66,6 +67,19 @@ interface UIState {
    * source of truth, no offline write-through for alerts).
    */
   priceAlerts: PriceAlert[];
+  /**
+   * Phase 17 — id of the user's default `Избранное` list. Hydrated by
+   * `useSupabaseUserDataSync`; null in dev/stub mode where no Supabase
+   * session exists. The `favorites` and `favUnits` slices represent the
+   * items in this list (backwards-compat for `useFavorites`).
+   */
+  defaultListId: string | null;
+  /**
+   * Phase 17 — every list the authenticated user is involved with: owned,
+   * collaborated on, or followed. Hydrated by `useSupabaseUserDataSync`;
+   * not persisted.
+   */
+  userLists: List[];
 }
 
 interface UIActions {
@@ -75,6 +89,10 @@ interface UIActions {
   setPriceAlerts: (alerts: PriceAlert[]) => void;
   upsertPriceAlert: (alert: PriceAlert) => void;
   removePriceAlert: (id: string) => void;
+  setDefaultListId: (id: string | null) => void;
+  setUserLists: (lists: List[]) => void;
+  upsertUserList: (list: List) => void;
+  removeUserList: (id: string) => void;
 }
 
 interface CalculatorState {
@@ -208,6 +226,8 @@ export const useAppStore = create<AppStore>()(
       showMarketRef: false,
       compareIds: [],
       priceAlerts: [],
+      defaultListId: null,
+      userLists: [],
       setShowMarketRef: (showMarketRef) => set({ showMarketRef }),
       toggleCompare: (id) =>
         set((s) => {
@@ -231,6 +251,20 @@ export const useAppStore = create<AppStore>()(
         }),
       removePriceAlert: (id) =>
         set((s) => ({ priceAlerts: s.priceAlerts.filter((a) => a.id !== id) })),
+      setDefaultListId: (defaultListId) => set({ defaultListId }),
+      setUserLists: (userLists) => set({ userLists }),
+      upsertUserList: (list) =>
+        set((s) => {
+          const idx = s.userLists.findIndex((l) => l.id === list.id);
+          if (idx >= 0) {
+            const next = [...s.userLists];
+            next[idx] = list;
+            return { userLists: next };
+          }
+          return { userLists: [list, ...s.userLists] };
+        }),
+      removeUserList: (id) =>
+        set((s) => ({ userLists: s.userLists.filter((l) => l.id !== id) })),
 
       // calculator (persisted)
       calcObjects: [defaultCalcObject()],

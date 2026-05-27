@@ -12,15 +12,19 @@ import { useAppStore } from '@/store/app-store';
 const NUDGE_TRIGGER_COUNT = 3;
 
 /**
- * Phase 16 — inline strip prompting the user to enable price alerts after
+ * Phase 17 — inline strip prompting the user to enable price alerts after
  * they've collected enough favorites. Renders once, then disappears
- * permanently (gated by `userPrefs.alertsNudgeDismissed`). Tapping "Enable"
- * bulk-creates default-threshold alerts for every current favorite.
+ * permanently (gated by `userPrefs.alertsNudgeDismissed`).
+ *
+ * Alerts are now per-LIST (Phase 17): tapping "Enable" creates a single
+ * alert on the user's default `Избранное` list, which fires when any item
+ * in the list moves price by ≥ the default threshold.
  */
 export function AlertOnboardingNudge() {
   const t = useTranslations();
   const { favoriteProjects, favoriteUnits } = useFavorites();
   const { alerts, bulkAdd } = useAlerts();
+  const defaultListId = useAppStore((s) => s.defaultListId);
   const dismissed = useAppStore((s) => s.alertsNudgeDismissed);
   const setDismissed = useAppStore((s) => s.setAlertsNudgeDismissed);
   const toast = useToast();
@@ -28,25 +32,19 @@ export function AlertOnboardingNudge() {
   const totalFavorites = favoriteProjects.length + favoriteUnits.length;
   const hasAnyAlert = alerts.some((a) => a.active);
 
-  // Only show: 3+ favorites, not yet dismissed, no active alerts already.
-  if (dismissed || hasAnyAlert || totalFavorites < NUDGE_TRIGGER_COUNT) {
+  // Only show: 3+ favorites, not yet dismissed, no active alerts already,
+  // and the default list must exist (no Supabase = no default list).
+  if (
+    dismissed ||
+    hasAnyAlert ||
+    !defaultListId ||
+    totalFavorites < NUDGE_TRIGGER_COUNT
+  ) {
     return null;
   }
 
   const handleEnable = async () => {
-    const targets = [
-      ...favoriteProjects.map((p) => ({
-        projectId: p.id,
-        unitId: null as string | null,
-        thresholdPct: ALERTS_DEFAULT_THRESHOLD_PCT,
-      })),
-      ...favoriteUnits.map(({ project, unit }) => ({
-        projectId: project.id,
-        unitId: unit.id,
-        thresholdPct: ALERTS_DEFAULT_THRESHOLD_PCT,
-      })),
-    ];
-    const result = await bulkAdd(targets);
+    const result = await bulkAdd([defaultListId], ALERTS_DEFAULT_THRESHOLD_PCT);
     setDismissed(true);
     if (result.ok) {
       toast.success(t.alerts.nudgeEnabled);

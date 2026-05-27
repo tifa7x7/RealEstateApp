@@ -23,34 +23,30 @@ export type AlertToggleResult =
 
 export interface UseAlertsResult {
   alerts: PriceAlert[];
-  /** True when this scope already has an active alert. */
-  hasAlert: (projectId: number, unitId?: string | null) => boolean;
+  /** True when this list already has an active alert. */
+  hasAlert: (listId: string) => boolean;
   /** Add an alert (idempotent). Returns the typed failure modes. */
   add: (input: CreateAlertInput) => Promise<AlertToggleResult>;
-  /** Toggle an alert for a scope. Removes when one exists, adds otherwise. */
+  /** Toggle an alert on a list. Removes when one exists, adds otherwise. */
   toggle: (input: CreateAlertInput) => Promise<AlertToggleResult>;
   remove: (alertId: string) => Promise<void>;
   setThreshold: (alertId: string, thresholdPct: number) => Promise<void>;
   setActive: (alertId: string, active: boolean) => Promise<void>;
-  bulkAdd: (targets: CreateAlertInput[]) => Promise<AlertToggleResult>;
+  /** Bulk-enable alerts on a set of list ids. */
+  bulkAdd: (listIds: string[], thresholdPct?: number) => Promise<AlertToggleResult>;
   /** Active free-tier limit (Pro returns Infinity). */
   limit: number;
   isPro: boolean;
 }
 
-function findAlert(
-  alerts: PriceAlert[],
-  projectId: number,
-  unitId: string | null | undefined,
-): PriceAlert | undefined {
-  const u = unitId ?? null;
-  return alerts.find((a) => a.projectId === projectId && a.unitId === u);
+function findAlertByList(alerts: PriceAlert[], listId: string): PriceAlert | undefined {
+  return alerts.find((a) => a.listId === listId);
 }
 
 /**
- * Wraps the `price_alerts` table with tier-aware limits, optimistic store
- * updates, and toast feedback. The Zustand store mirrors the server state
- * for fast UI reads; this hook is the only writer.
+ * Phase 17 — list-scoped wrapper around the `price_alerts` table. One alert
+ * per (user, list); triggering happens when any item in the list moves price
+ * by ≥ threshold. Optimistic store updates + toast feedback live here.
  *
  * No localStorage write-through — alerts are server-only. When Supabase is
  * unconfigured the hook short-circuits with `not-authenticated`.
@@ -68,8 +64,7 @@ export function useAlerts(): UseAlertsResult {
   const limit = isPro ? Number.POSITIVE_INFINITY : ALERTS_LIMIT_FREE;
 
   const hasAlert = useCallback(
-    (projectId: number, unitId?: string | null) =>
-      !!findAlert(alerts, projectId, unitId)?.active,
+    (listId: string) => !!findAlertByList(alerts, listId)?.active,
     [alerts],
   );
 
@@ -85,7 +80,7 @@ export function useAlerts(): UseAlertsResult {
         toast.info(t.alerts.signInRequired);
         return { ok: false, reason: 'not-authenticated' };
       }
-      const existing = findAlert(alerts, input.projectId, input.unitId);
+      const existing = findAlertByList(alerts, input.listId);
       const activeCount = alerts.filter((a) => a.active).length;
       if (!existing && activeCount >= limit) {
         toast.info(t.alerts.limitReachedFree);
@@ -109,7 +104,6 @@ export function useAlerts(): UseAlertsResult {
   const remove = useCallback<UseAlertsResult['remove']>(
     async (alertId) => {
       const client = requireClient();
-      // Optimistic remove regardless — keeps UI snappy on dev path.
       removePriceAlertStore(alertId);
       if (!client) return;
       try {
@@ -125,7 +119,7 @@ export function useAlerts(): UseAlertsResult {
 
   const toggle = useCallback<UseAlertsResult['toggle']>(
     async (input) => {
-      const existing = findAlert(alerts, input.projectId, input.unitId);
+      const existing = findAlertByList(alerts, input.listId);
       if (existing) {
         await remove(existing.id);
         return { ok: true, alert: null };
@@ -172,37 +166,30 @@ export function useAlerts(): UseAlertsResult {
   );
 
   const bulkAdd = useCallback<UseAlertsResult['bulkAdd']>(
-    async (targets) => {
-      if (targets.length === 0) return { ok: true, alert: null };
+    async (listIds, thresholdPct = 5) => {
+      if (listIds.length === 0) return { ok: true, alert: null };
       const client = requireClient();
       if (!client || !user) {
         toast.info(t.alerts.signInRequired);
         return { ok: false, reason: 'not-authenticated' };
       }
-      // Honor the free-tier cap on the slice we're adding.
-      const newOnes = targets.filter(
-        (t) => !findAlert(alerts, t.projectId, t.unitId),
-      );
+      const newListIds = listIds.filter((id) => !findAlertByList(alerts, id));
       const activeCount = alerts.filter((a) => a.active).length;
       const room = Math.max(0, limit - activeCount);
-      const slice = Number.isFinite(room) ? newOnes.slice(0, room) : newOnes;
+      const slice = Number.isFinite(room) ? newListIds.slice(0, room) : newListIds;
       try {
-        await bulkCreateAlerts(client, user.id, slice);
-        // Re-hydrate the store from the server (cheap, < 100 rows).
-        // The fetcher lives in useSupabaseUserDataSync; here we just
-        // optimistically merge — the next sync will reconcile any drift.
-        const optimistic: PriceAlert[] = slice.map((t) => ({
-          id: `optimistic-${t.projectId}-${t.unitId ?? 'all'}`,
-          projectId: t.projectId,
-          unitId: t.unitId ?? null,
-          thresholdPct: t.thresholdPct ?? 5,
+        await bulkCreateAlerts(client, user.id, slice, thresholdPct);
+        const optimistic: PriceAlert[] = slice.map((listId) => ({
+          id: `optimistic-${listId}`,
+          listId,
+          thresholdPct,
           active: true,
           lastNotifiedAt: null,
           unsubscribeToken: '',
           createdAt: new Date().toISOString(),
         }));
         setPriceAlertsStore([...optimistic, ...alerts]);
-        if (newOnes.length > slice.length) {
+        if (newListIds.length > slice.length) {
           toast.info(t.alerts.limitReachedFree);
           return { ok: false, reason: 'limit-reached', limit: ALERTS_LIMIT_FREE };
         }
